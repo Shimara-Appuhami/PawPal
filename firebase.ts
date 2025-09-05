@@ -9,6 +9,7 @@ import { getFirestore } from "firebase/firestore";
 const firebaseConfig = {
   apiKey: "AIzaSyA4Wc5CXMg-19GdBSzLT1cbD4dBnpYFfF0",
   authDomain: "pawpal-28f28.firebaseapp.com",
+  databaseURL: "https://pawpal-28f28-default-rtdb.firebaseio.com",
   projectId: "pawpal-28f28",
   storageBucket: "pawpal-28f28.firebasestorage.app",
   messagingSenderId: "363119788687",
@@ -16,7 +17,7 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig)
+const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)
