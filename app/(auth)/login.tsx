@@ -27,7 +27,7 @@ const Login = () => {
     await login(email, password)
       .then((res) => {
         console.log(res);
-        router.push("/(tasks)/HomeScreen");
+        router.push("/(dashboard)/HomeScreen");
       })
       .catch((err) => {
         console.error(err);
