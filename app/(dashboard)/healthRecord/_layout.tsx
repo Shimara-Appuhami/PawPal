@@ -3,9 +3,9 @@ import React from "react";
 
 const HealthLayout = () => {
   return (
-    <Stack screenOptions={{ animation: "slide_from_right" }}>
+    <Stack screenOptions={{ headerShown: false }}>
       {/* Health Records List */}
-      <Stack.Screen name="index" options={{ title: "Health Records" }} />
+      {/* <Stack.Screen name="index" options={{ title: "" }} /> */}
 
       {/* Single Record or Add Form */}
       <Stack.Screen
