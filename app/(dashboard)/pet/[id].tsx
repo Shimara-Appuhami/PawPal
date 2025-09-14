@@ -1,9 +1,22 @@
 import { useAuth } from "@/context/AuthContext";
 import { useLoader } from "@/context/LoaderContext";
+import { db, storage } from "@/firebase";
 import { createPet, getPetById, updatePet } from "@/services/taskService";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { doc, updateDoc } from "firebase/firestore";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import React, { useEffect, useState } from "react";
-import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const PetFormScreen = () => {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -11,6 +24,9 @@ const PetFormScreen = () => {
   const [name, setName] = useState<string>("");
   const [type, setType] = useState<string>("");
   const [age, setAge] = useState<string>(""); // optional age field
+  const [breed, setBreed] = useState<string>("");
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
   const { user } = useAuth();
@@ -25,6 +41,8 @@ const PetFormScreen = () => {
             setName(pet.name);
             setType(pet.type);
             setAge(pet.age);
+            setBreed((pet as any).breed || "");
+            setImageUrl((pet as any).imageUrl);
           }
         } catch (err) {
           console.error("Error loading pet:", err);
@@ -36,8 +54,31 @@ const PetFormScreen = () => {
     load();
   }, [id, user?.uid]);
 
+  const pickImage = async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert("Permission required", "Please allow gallery access.");
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
+    if (!res.canceled && res.assets.length > 0) {
+      setImageUri(res.assets[0].uri);
+    }
+  };
+
+  const uploadImage = async (uid: string, petId: string, uri: string) => {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const fileRef = ref(
+      storage,
+      `users/${uid}/pets/${petId}/photo-${Date.now()}.jpg`
+    );
+    await uploadBytes(fileRef, blob);
+    return await getDownloadURL(fileRef);
+  };
+
   const handleSubmit = async () => {
-    if (!name.trim() || !type.trim() || !age.trim()) {
+    if (!name.trim() || !type.trim() || !age.trim() || !breed.trim()) {
       Alert.alert("Validation", "All fields are required");
       return;
     }
@@ -49,16 +90,30 @@ const PetFormScreen = () => {
 
     try {
       showLoader();
-      const petData = {
+      const baseData = {
         name: name.trim(),
         type: type.trim(),
         age: age.trim(),
-      };
+        breed: breed.trim(),
+      } as any;
 
       if (isNew) {
-        await createPet(user.uid, petData);
+        // Fall back to existing service for creation (without image upload here)
+        await createPet(user.uid, baseData);
       } else {
-        await updatePet(user.uid, id as string, petData);
+        // If a new image was chosen, upload then update imageUrl
+        if (imageUri && id) {
+          const url = await uploadImage(user.uid, id as string, imageUri);
+          baseData.imageUrl = url;
+        }
+        await updatePet(user.uid, id as string, baseData);
+
+        // Ensure Firestore doc has imageUrl if we uploaded directly
+        if (baseData.imageUrl) {
+          await updateDoc(doc(db, "users", user.uid, "pets", id as string), {
+            imageUrl: baseData.imageUrl,
+          });
+        }
       }
 
       Alert.alert(
@@ -75,43 +130,158 @@ const PetFormScreen = () => {
   };
 
   return (
-    <View className="flex-1 w-full p-5">
-      <Text className="text-2xl font-bold">
-        {isNew ? "Add Pet" : "Edit Pet"}
-      </Text>
-
-      <TextInput
-        placeholder="Pet Name"
-        className="border border-gray-400 p-2 my-2 rounded-md"
-        value={name}
-        onChangeText={setName}
-      />
-
-      <TextInput
-        placeholder="Pet Type"
-        className="border border-gray-400 p-2 my-2 rounded-md"
-        value={type}
-        onChangeText={setType}
-      />
-
-      <TextInput
-        placeholder="Pet Age"
-        className="border border-gray-400 p-2 my-2 rounded-md"
-        value={age}
-        onChangeText={setAge}
-        keyboardType="numeric"
-      />
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.headerWrap}>
+        <Text style={styles.title}>{isNew ? "Add Pet" : "Edit Pet"}</Text>
+        <Text style={styles.subtitle}>
+          Keep your pet profile up to date with a photo and details.
+        </Text>
+      </View>
 
       <TouchableOpacity
-        className="bg-blue-400 rounded-md px-6 py-3 my-2"
-        onPress={handleSubmit}
+        style={styles.uploadBox}
+        activeOpacity={0.85}
+        onPress={pickImage}
       >
-        <Text className="text-xl text-white">
+        {imageUri || imageUrl ? (
+          <>
+            <Image
+              source={{ uri: imageUri ?? imageUrl! }}
+              style={styles.uploadImage}
+            />
+            <View style={styles.uploadOverlay}>
+              <Text style={styles.uploadOverlayText}>Change photo</Text>
+            </View>
+          </>
+        ) : (
+          <View style={{ alignItems: "center" }}>
+            <View style={styles.uploadIcon} />
+            <Text style={styles.uploadTitle}>Add a pet photo</Text>
+            <Text style={styles.uploadHint}>JPG or PNG, up to 5MB</Text>
+            <Text style={styles.uploadCta}>Tap to choose from gallery</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Pet Name</Text>
+        <TextInput
+          style={styles.input}
+          value={name}
+          onChangeText={setName}
+          placeholder="Enter pet name"
+        />
+      </View>
+
+      <View style={styles.row}>
+        <View style={[styles.inputGroup, styles.col]}>
+          <Text style={styles.label}>Age</Text>
+          <TextInput
+            style={styles.input}
+            value={age}
+            onChangeText={setAge}
+            placeholder="e.g. 2"
+            keyboardType="numeric"
+          />
+          <Text style={styles.helper}>Enter age in years</Text>
+        </View>
+        <View style={[styles.inputGroup, styles.col]}>
+          <Text style={styles.label}>Type</Text>
+          <TextInput
+            style={styles.input}
+            value={type}
+            onChangeText={setType}
+            placeholder="Dog, Cat, etc."
+          />
+          <Text style={styles.helper}>Animal category</Text>
+        </View>
+      </View>
+
+      <View style={styles.inputGroup}>
+        <Text style={styles.label}>Breed</Text>
+        <TextInput
+          style={styles.input}
+          value={breed}
+          onChangeText={setBreed}
+          placeholder="Labrador, Persian, etc."
+        />
+      </View>
+
+      <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmit}>
+        <Text style={styles.primaryBtnText}>
           {isNew ? "Add Pet" : "Update Pet"}
         </Text>
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
 export default PetFormScreen;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#fff" },
+  content: { padding: 16, paddingBottom: 32 },
+  headerWrap: { marginBottom: 8 },
+  title: { fontSize: 24, fontWeight: "700", color: "#111827" },
+  subtitle: { marginTop: 4, color: "#6b7280" },
+  uploadBox: {
+    height: 200,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#d1d5db",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: "#f9fafb",
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  uploadImage: { width: "100%", height: "100%" },
+  uploadOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    paddingVertical: 8,
+    alignItems: "center",
+  },
+  uploadOverlayText: { color: "#fff", fontWeight: "600" },
+  uploadIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: "#d1d5db",
+    marginBottom: 8,
+  },
+  uploadTitle: { fontWeight: "600", color: "#111827" },
+  uploadHint: { marginTop: 2, color: "#6b7280", fontSize: 12 },
+  uploadCta: { marginTop: 6, color: "#2563eb", fontWeight: "600" },
+  row: { flexDirection: "row", gap: 12 },
+  col: { flex: 1 },
+  inputGroup: { marginBottom: 14 },
+  label: { fontWeight: "600", marginBottom: 6, color: "#374151" },
+  input: {
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: "#f9fafb",
+  },
+  helper: { fontSize: 12, color: "#6b7280", marginTop: 4 },
+  primaryBtn: {
+    backgroundColor: "#0ea5e9",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+});

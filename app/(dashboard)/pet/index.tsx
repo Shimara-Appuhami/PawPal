@@ -3,14 +3,15 @@ import { auth, db } from "@/firebase";
 import { Pet } from "@/types/pet";
 import { useRouter } from "expo-router";
 import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
-import { Plus } from "lucide-react-native";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
+  Pressable,
   ScrollView,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 
@@ -23,7 +24,7 @@ const PetsScreen = () => {
   const user = auth.currentUser;
   if (!user) {
     Alert.alert("Auth", "You must be logged in to see pets.");
-    router.push("/login"); // redirect to login if needed
+    router.push("/login");
     return null;
   }
 
@@ -73,13 +74,76 @@ const PetsScreen = () => {
   };
 
   return (
-    <View className="flex-1 w-full">
-      <Text className="text-4xl font-bold px-4 py-4">Pets</Text>
+    <View className="flex-1 w-full" style={{ backgroundColor: "#f5f7fb" }}>
+      {/* AppBar */}
+      <View
+        style={{
+          backgroundColor: "#0ea5e9",
+          paddingTop: 28,
+          paddingBottom: 16,
+          paddingHorizontal: 20,
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
+          elevation: 4,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View>
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "700",
+                color: "#fff",
+              }}
+            >
+              Pets
+            </Text>
+            <Text
+              style={{
+                color: "#e5e7eb",
+                marginTop: 2,
+              }}
+            >
+              {pets.length} total
+            </Text>
+          </View>
+          <Pressable
+            android_ripple={{
+              color: "rgba(255,255,255,0.2)",
+              borderless: true,
+            }}
+            style={{
+              padding: 6,
+              borderRadius: 999,
+            }}
+          >
+            <Search size={22} color="#fff" />
+          </Pressable>
+        </View>
+      </View>
 
       {user && (
-        <View className="absolute bottom-5 right-5 z-50">
-          <TouchableOpacity
+        <View
+          style={{
+            position: "absolute",
+            bottom: 24,
+            right: 20,
+            zIndex: 50,
+            alignItems: "center",
+          }}
+        >
+          <Pressable
             onPress={() => router.push("/(dashboard)/pet/PetProfile")}
+            android_ripple={{
+              color: "rgba(255,255,255,0.3)",
+              borderless: true,
+            }}
             style={{ alignItems: "center" }}
           >
             <View
@@ -87,26 +151,28 @@ const PetsScreen = () => {
                 width: 64,
                 height: 64,
                 borderRadius: 32,
-                borderWidth: 2,
-                borderStyle: "dashed",
-                borderColor: "#d1d5db",
+                backgroundColor: "#0ea5e9",
                 alignItems: "center",
                 justifyContent: "center",
+                shadowColor: "#000",
+                shadowOpacity: 0.2,
+                shadowRadius: 6,
+                elevation: 4,
                 marginBottom: 4,
               }}
             >
-              <Plus size={28} color="#9ca3af" />
+              <Plus size={28} color="#fff" />
             </View>
             <Text
               style={{
                 fontSize: 12,
                 textAlign: "center",
-                color: "#9ca3af",
+                color: "#6b7280",
               }}
             >
               Add Pet
             </Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
 
@@ -114,44 +180,151 @@ const PetsScreen = () => {
         <ActivityIndicator size="large" color="#0d6efd" className="mt-4" />
       )}
 
-      <ScrollView className="mt-4">
+      <ScrollView
+        className="mt-2"
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
         {pets.length === 0 && !loading && (
           <Text className="text-center text-gray-500 mt-6">
             No pets available.
           </Text>
         )}
 
-        {pets.map((pet) => (
-          <View
-            key={pet.id}
-            className="bg-gray-200 p-4 mb-3 rounded-lg mx-4 border border-gray-400"
-          >
-            <Text className="text-lg font-semibold">{pet.name}</Text>
-            <Text className="text-sm text-gray-700 mb-2">
-              Age: {pet.age} | Type: {pet.type}
-            </Text>
-
-            <View className="flex-row">
-              <TouchableOpacity
-                className="bg-yellow-300 px-3 py-1 rounded"
-                onPress={() =>
-                  router.push({
-                    pathname: "/(dashboard)/pet/[id]",
-                    params: { id: pet.id ?? "" },
-                  })
-                }
+        <View
+          style={{
+            paddingHorizontal: 16,
+            flexDirection: "row",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+          }}
+        >
+          {pets.map((pet) => (
+            <Pressable
+              key={pet.id}
+              android_ripple={{ color: "rgba(0,0,0,0.06)" }}
+              style={{ width: "48%", marginBottom: 14 }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  shadowColor: "#000",
+                  shadowOpacity: 0.06,
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowRadius: 5,
+                  elevation: 2,
+                }}
               >
-                <Text>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="bg-red-500 px-3 py-1 rounded ml-3"
-                onPress={() => handleDelete(pet.id!)}
-              >
-                <Text className="text-white">Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+                <View style={{ width: "100%", aspectRatio: 1 }}>
+                  {pet.imageUrl ? (
+                    <Image
+                      source={{ uri: pet.imageUrl }}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        flex: 1,
+                        backgroundColor: "#e5e7eb",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontWeight: "700",
+                          fontSize: 22,
+                          color: "#9ca3af",
+                        }}
+                      >
+                        {pet.name?.[0]?.toUpperCase?.() ?? "P"}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <View style={{ padding: 10 }}>
+                  <Text
+                    style={{
+                      fontWeight: "700",
+                      color: "#111827",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {pet.name}
+                  </Text>
+                  <Text
+                    style={{ color: "#6b7280", marginTop: 2 }}
+                    numberOfLines={1}
+                  >
+                    {pet.breed ? pet.breed : pet.type}
+                  </Text>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      marginTop: 8,
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Pressable
+                      android_ripple={{ color: "rgba(0,0,0,0.08)" }}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/(dashboard)/pet/[id]",
+                          params: { id: pet.id ?? "" },
+                        })
+                      }
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        borderRadius: 8,
+                        backgroundColor: "#f3f4f6",
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Pencil size={16} color="#111827" />
+                      <Text
+                        style={{
+                          marginLeft: 6,
+                          color: "#111827",
+                          fontWeight: "600",
+                          fontSize: 12,
+                        }}
+                      >
+                        Edit
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      android_ripple={{ color: "rgba(0,0,0,0.08)" }}
+                      onPress={() => handleDelete(pet.id!)}
+                      style={{
+                        paddingVertical: 6,
+                        paddingHorizontal: 10,
+                        borderRadius: 8,
+                        backgroundColor: "#fee2e2",
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Trash2 size={16} color="#ef4444" />
+                      <Text
+                        style={{
+                          marginLeft: 6,
+                          color: "#b91c1c",
+                          fontWeight: "700",
+                          fontSize: 12,
+                        }}
+                      >
+                        Delete
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
     </View>
   );

@@ -3,21 +3,41 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { addDoc, collection, getDocs } from "firebase/firestore";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+} from "firebase/firestore";
+import {
+  deleteObject,
+  getDownloadURL,
+  ref,
+  uploadBytes,
+} from "firebase/storage";
+import {
+  Camera,
+  ChevronLeft,
+  Download,
+  Eye,
+  Image as ImageIcon,
+  Send,
+  Trash2,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
-import { ArrowDownTrayIcon, EyeIcon } from "react-native-heroicons/outline";
 
 interface HealthRecord {
   id: string;
@@ -75,7 +95,6 @@ export default function HealthFormScreen() {
     const permission = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
     if (!permission.granted) {
       Alert.alert(
         "Permission required",
@@ -83,14 +102,11 @@ export default function HealthFormScreen() {
       );
       return;
     }
-
     const result = fromCamera
       ? await ImagePicker.launchCameraAsync({ quality: 0.7 })
       : await ImagePicker.launchImageLibraryAsync({ quality: 0.7 });
-
-    if (!result.canceled && result.assets.length > 0) {
+    if (!result.canceled && result.assets.length > 0)
       setImage(result.assets[0].uri);
-    }
   };
 
   const uploadImage = async (uri: string): Promise<string> => {
@@ -109,17 +125,14 @@ export default function HealthFormScreen() {
       Alert.alert("Validation", "Please add an image");
       return;
     }
-
     setUploading(true);
     try {
       const imageUrl = await uploadImage(image);
-
       await addDoc(recordsRef, {
         date: new Date().toISOString(),
         note: note.trim() || null,
         imageUrl,
       });
-
       setNote("");
       setImage(null);
       fetchRecords();
@@ -144,8 +157,6 @@ export default function HealthFormScreen() {
         Alert.alert("Download started!");
         return;
       }
-
-      // Ask for gallery permission
       const perm = await MediaLibrary.requestPermissionsAsync();
       if (!perm.granted) {
         Alert.alert(
@@ -154,8 +165,6 @@ export default function HealthFormScreen() {
         );
         return;
       }
-
-      // Download to app cache
       const FS: any = FileSystem;
       const baseDir: string | undefined =
         FS.cacheDirectory || FS.documentDirectory;
@@ -165,24 +174,18 @@ export default function HealthFormScreen() {
       }
       const filename = `health-record-${Date.now()}.jpg`;
       const localUri = `${baseDir}${filename}`;
-
       const { uri } = await FileSystem.downloadAsync(url, localUri);
-
-      // Preferred: save straight to gallery
       try {
         await MediaLibrary.saveToLibraryAsync(uri);
         Alert.alert("Saved", "Image saved to your gallery.");
         return;
       } catch (e) {
-        // Fallback: create album and add asset (some Android devices require this)
         const asset = await MediaLibrary.createAssetAsync(uri);
         const albumName = "PawPal";
         const album = await MediaLibrary.getAlbumAsync(albumName);
-        if (album) {
+        if (album)
           await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-        } else {
-          await MediaLibrary.createAlbumAsync(albumName, asset, false);
-        }
+        else await MediaLibrary.createAlbumAsync(albumName, asset, false);
         Alert.alert("Saved", "Image saved to your gallery.");
         return;
       }
@@ -192,116 +195,375 @@ export default function HealthFormScreen() {
     }
   };
 
+  const storagePathFromUrl = (url: string) => {
+    const match = url.match(/\/o\/(.+?)\?/);
+    return match ? decodeURIComponent(match[1]) : null;
+  };
+
+  const handleDeleteRecord = async (recordId: string, imageUrl: string) => {
+    Alert.alert("Delete", "Delete this health record?", [
+      { text: "Cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            try {
+              const path = storagePathFromUrl(imageUrl);
+              if (path) {
+                const imageRef = ref(storage, path);
+                await deleteObject(imageRef);
+              }
+            } catch (e) {
+              console.warn("Storage delete failed (continuing):", e);
+            }
+            await deleteDoc(doc(recordsRef, recordId));
+            setRecords((prev) => prev.filter((r) => r.id !== recordId));
+            Alert.alert("Deleted", "Health record removed.");
+          } catch (err) {
+            console.error("Delete failed", err);
+            Alert.alert("Error", "Failed to delete record.");
+          }
+        },
+      },
+    ]);
+  };
+
   return (
-    <ScrollView className="flex-1 p-4 bg-white">
-      <Text className="text-2xl font-bold mb-4">
-        {petName} - Health Records
-      </Text>
-
-      {loading ? (
-        <Text>Loading...</Text>
-      ) : records.length === 0 ? (
-        <Text className="text-gray-500 mb-4">No health records yet.</Text>
-      ) : (
-        records.map((record) => (
-          <View
-            key={record.id}
-            className="bg-white shadow-md p-4 mb-4 rounded-lg border border-gray-200"
+    <ScrollView
+      style={{ flex: 1, backgroundColor: "#f6f7fb" }}
+      contentContainerStyle={{ paddingBottom: 120 }}
+    >
+      {/* AppBar */}
+      <View
+        style={{
+          backgroundColor: "#0ea5e9",
+          paddingTop: 28,
+          paddingBottom: 16,
+          paddingHorizontal: 20,
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
+          elevation: 4,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <Pressable
+            onPress={() => router.back()}
+            android_ripple={{ color: "rgba(0,0,0,0.06)", borderless: true }}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 8,
+            }}
           >
-            <Image
-              source={{ uri: record.imageUrl }}
-              className="w-full h-48 rounded mb-3"
-              style={{ resizeMode: "cover" }}
-            />
-            {record.note ? (
-              <Text className="text-gray-700">{record.note}</Text>
-            ) : null}
-            <Text className="text-gray-500 mt-1 text-sm">
-              Date: {new Date(record.date).toLocaleString()}
+            <ChevronLeft size={20} color="#111827" />
+          </Pressable>
+          <View>
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "700",
+                color: "#fff",
+              }}
+            >
+              {petName} - Health Records
             </Text>
-
-            <View className="flex-row mt-3 space-x-4">
-              <TouchableOpacity
-                className="flex-row items-center bg-blue-500 px-3 py-2 rounded-lg"
-                onPress={() => {
-                  setSelectedImage(record.imageUrl);
-                  setPreviewVisible(true);
-                }}
-              >
-                <EyeIcon size={20} color="white" />
-                <Text className="text-white ml-2">Preview</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="flex-row items-center bg-green-500 px-3 py-2 rounded-lg"
-                onPress={() => handleDownload(record.imageUrl)}
-              >
-                <ArrowDownTrayIcon size={20} color="white" />
-                <Text className="text-white ml-2">Download</Text>
-              </TouchableOpacity>
-            </View>
+            <Text
+              style={{
+                color: "#e5e7eb",
+                marginTop: 2,
+              }}
+            >
+              Upload health-related images and notes
+            </Text>
           </View>
-        ))
-      )}
-
-      <View className="mt-6">
-        {image && (
-          <Image
-            source={{ uri: image }}
-            className="w-full h-48 rounded mb-2"
-            style={{ resizeMode: "cover" }}
-          />
-        )}
-
-        <View className="flex-row justify-between mb-4">
-          <TouchableOpacity
-            className="bg-blue-500 p-3 rounded-lg flex-1 mr-2"
-            onPress={() => pickImage(true)}
-          >
-            <Text className="text-white text-center font-bold">Camera</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="bg-green-500 p-3 rounded-lg flex-1 ml-2"
-            onPress={() => pickImage(false)}
-          >
-            <Text className="text-white text-center font-bold">Gallery</Text>
-          </TouchableOpacity>
         </View>
-
-        <TextInput
-          placeholder="Notes (optional)"
-          className="border border-gray-400 p-2 rounded-md mb-4"
-          value={note}
-          onChangeText={setNote}
-          multiline
-        />
-
-        <TouchableOpacity
-          className="bg-orange-500 p-3 rounded-lg items-center"
-          onPress={handleAddRecord}
-          disabled={uploading}
-        >
-          <Text className="text-white font-bold">
-            {uploading ? "Saving..." : "Save Record"}
-          </Text>
-        </TouchableOpacity>
       </View>
 
+      {/* Add Record Card */}
+      <View
+        style={{
+          marginTop: 12,
+          backgroundColor: "#fff",
+          borderRadius: 16,
+          padding: 12,
+          shadowColor: "#000",
+          shadowOpacity: 0.04,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 4,
+          elevation: 2,
+          marginHorizontal: 16,
+        }}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image }}
+            style={{
+              width: "100%",
+              height: 200,
+              borderRadius: 12,
+              marginBottom: 10,
+            }}
+          />
+        ) : null}
+
+        {/* Modern actions */}
+        <View style={{ flexDirection: "row", gap: 12, marginBottom: 10 }}>
+          <Pressable
+            onPress={() => pickImage(true)}
+            android_ripple={{ color: "rgba(0,0,0,0.06)" }}
+            style={{
+              flex: 1,
+              borderWidth: 1,
+              borderColor: "#e5e7eb",
+              borderRadius: 12,
+              paddingVertical: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#fff",
+            }}
+          >
+            <Camera size={22} color="#6366f1" />
+            <Text style={{ marginTop: 6, color: "#111827", fontWeight: "600" }}>
+              Camera
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => pickImage(false)}
+            android_ripple={{ color: "rgba(0,0,0,0.06)" }}
+            style={{
+              flex: 1,
+              borderWidth: 1,
+              borderColor: "#e5e7eb",
+              borderRadius: 12,
+              paddingVertical: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#fff",
+            }}
+          >
+            <ImageIcon size={22} color="#6366f1" />
+            <Text style={{ marginTop: 6, color: "#111827", fontWeight: "600" }}>
+              Gallery
+            </Text>
+          </Pressable>
+        </View>
+
+        <Text style={{ fontWeight: "700", color: "#111827", marginBottom: 6 }}>
+          Notes (optional)
+        </Text>
+        <View style={{ position: "relative" }}>
+          <TextInput
+            placeholder="Add any notes about this record..."
+            style={{
+              borderColor: "#e5e7eb",
+              borderWidth: 1,
+              padding: 12,
+              borderRadius: 12,
+              paddingRight: 56,
+              minHeight: 48,
+              backgroundColor: "#f9fafb",
+            }}
+            value={note}
+            onChangeText={setNote}
+            multiline
+          />
+          <Pressable
+            onPress={handleAddRecord}
+            disabled={uploading}
+            android_ripple={{
+              color: "rgba(255,255,255,0.3)",
+              borderless: true,
+            }}
+            style={{
+              position: "absolute",
+              right: 8,
+              bottom: 8,
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              backgroundColor: "#6366f1",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {uploading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Send size={18} color="#fff" />
+            )}
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
+        {loading ? (
+          <ActivityIndicator size="small" color="#6366f1" />
+        ) : records.length === 0 ? (
+          <Text style={{ color: "#6b7280", marginBottom: 12 }}>
+            No health records yet.
+          </Text>
+        ) : (
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              justifyContent: "space-between",
+            }}
+          >
+            {records.map((record) => (
+              <View key={record.id} style={{ width: "48%", marginBottom: 14 }}>
+                <View
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    shadowColor: "#000",
+                    shadowOpacity: 0.06,
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowRadius: 5,
+                    elevation: 2,
+                  }}
+                >
+                  <View style={{ width: "100%", aspectRatio: 1 }}>
+                    <Image
+                      source={{ uri: record.imageUrl }}
+                      style={{ width: "100%", height: "100%" }}
+                    />
+                    <View
+                      style={{
+                        position: "absolute",
+                        left: 8,
+                        right: 8,
+                        bottom: 8,
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => {
+                          setSelectedImage(record.imageUrl);
+                          setPreviewVisible(true);
+                        }}
+                        android_ripple={{
+                          color: "rgba(0,0,0,0.06)",
+                          borderless: true,
+                        }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "rgba(255,255,255,0.9)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderWidth: 1,
+                          borderColor: "#e5e7eb",
+                        }}
+                      >
+                        <Eye size={18} color="#111827" />
+                      </Pressable>
+                      <Pressable
+                        onPress={() =>
+                          handleDeleteRecord(record.id, record.imageUrl)
+                        }
+                        android_ripple={{
+                          color: "rgba(0,0,0,0.06)",
+                          borderless: true,
+                        }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "#ef4444",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Trash2 size={18} color="#fff" />
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleDownload(record.imageUrl)}
+                        android_ripple={{
+                          color: "rgba(0,0,0,0.06)",
+                          borderless: true,
+                        }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: "rgba(255,255,255,0.9)",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderWidth: 1,
+                          borderColor: "#e5e7eb",
+                        }}
+                      >
+                        <Download size={18} color="#111827" />
+                      </Pressable>
+                    </View>
+                  </View>
+                  {record.note ? (
+                    <Text
+                      style={{ padding: 8, color: "#374151" }}
+                      numberOfLines={2}
+                    >
+                      {record.note}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={{
+                      color: "#6b7280",
+                      fontSize: 12,
+                      paddingHorizontal: 8,
+                      paddingBottom: 8,
+                    }}
+                  >
+                    Date: {new Date(record.date).toLocaleString()}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Preview Modal */}
       <Modal visible={previewVisible} transparent animationType="fade">
-        <View className="flex-1 bg-black justify-center items-center">
-          {selectedImage && (
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "#000",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          {selectedImage ? (
             <Image
               source={{ uri: selectedImage }}
-              className="w-full h-[80%]"
+              style={{ width: "100%", height: "80%" as any }}
               resizeMode="contain"
             />
-          )}
-          <TouchableOpacity
-            className="bg-red-500 p-3 rounded-lg mt-4"
+          ) : null}
+          <Pressable
             onPress={() => setPreviewVisible(false)}
+            android_ripple={{
+              color: "rgba(255,255,255,0.3)",
+              borderless: true,
+            }}
+            style={{
+              backgroundColor: "#111827",
+              paddingVertical: 10,
+              paddingHorizontal: 14,
+              borderRadius: 10,
+              marginTop: 12,
+            }}
           >
-            <Text className="text-white font-bold">Close</Text>
-          </TouchableOpacity>
+            <Text style={{ color: "#fff", fontWeight: "700" }}>Close</Text>
+          </Pressable>
         </View>
       </Modal>
     </ScrollView>
