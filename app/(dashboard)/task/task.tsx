@@ -39,7 +39,7 @@ export default function PetTasksScreen() {
         const snapshot = await getDocs(tasksRef);
         const taskList = snapshot.docs.map((doc) => ({
           id: doc.id,
-          ...doc.data(),
+          ...(doc.data() as any),
         })) as Task[];
         setTasks(taskList);
       } catch (err) {
@@ -53,40 +53,82 @@ export default function PetTasksScreen() {
   }, [petId, user.uid]);
 
   return (
-    <View className="flex-1 bg-white p-4">
-      <Text className="text-xl font-bold mb-4">{petName}'s Tasks</Text>
+    <View style={{ flex: 1, backgroundColor: "#f5f7fb" }}>
+      {/* AppBar */}
+      <View
+        style={{
+          backgroundColor: "#0ea5e9",
+          paddingVertical: 16,
+          paddingHorizontal: 16,
+          borderBottomLeftRadius: 16,
+          borderBottomRightRadius: 16,
+          elevation: 3,
+          marginBottom: 12,
+        }}
+      >
+        <Text style={{ fontSize: 18, fontWeight: "700", color: "#fff" }}>
+          {petName}'s Tasks
+        </Text>
+        <Text style={{ color: "#e5e7eb", marginTop: 2 }}>
+          View existing tasks or add new ones
+        </Text>
+      </View>
 
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 24 }}>
         {loading ? (
-          <ActivityIndicator size="small" color="#ea580c" />
+          <ActivityIndicator size="small" color="#0ea5e9" />
         ) : tasks.length === 0 ? (
-          <Text className="text-gray-500">No tasks yet. Add a new task!</Text>
+          <Text style={{ color: "#6b7280" }}>
+            No tasks yet. Add a new task!
+          </Text>
         ) : (
           tasks.map((task) => (
             <View
               key={task.id}
-              className="bg-gray-100 p-4 mb-3 rounded-lg border border-gray-300"
+              style={{
+                backgroundColor: "#fff",
+                padding: 12,
+                marginBottom: 10,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: "#e5e7eb",
+              }}
             >
-              <Text className="font-semibold text-lg">{task.title}</Text>
-              {task.description && (
-                <Text className="text-gray-600 mt-1">{task.description}</Text>
-              )}
+              <Text
+                style={{ fontWeight: "700", color: "#111827", fontSize: 16 }}
+              >
+                {task.title}
+              </Text>
+              {task.description ? (
+                <Text style={{ color: "#6b7280", marginTop: 2 }}>
+                  {task.description}
+                </Text>
+              ) : null}
             </View>
           ))
         )}
 
-        {/* Add Task Button */}
         <TouchableOpacity
-          className="flex-row items-center justify-center mt-4 bg-orange-500 p-3 rounded-lg"
           onPress={() =>
             router.push({
-              pathname: "/task/PetTaskScreen",
+              pathname: "/(dashboard)/task/PetTaskScreen",
               params: { petId, petName },
             })
           }
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            marginTop: 12,
+            backgroundColor: "#0ea5e9",
+            padding: 12,
+            borderRadius: 12,
+          }}
         >
           <Plus size={20} color="#fff" />
-          <Text className="text-white font-bold ml-2">Add Task</Text>
+          <Text style={{ color: "#fff", fontWeight: "700", marginLeft: 8 }}>
+            Add Task
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
