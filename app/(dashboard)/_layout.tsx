@@ -1,5 +1,10 @@
 import { Tabs } from "expo-router";
-import { BellIcon, DogIcon, HeartIcon, HomeIcon } from "lucide-react-native";
+import {
+  DogIcon,
+  HeartPulseIcon,
+  HomeIcon,
+  ListTodoIcon,
+} from "lucide-react-native";
 
 export default function DashboardLayout() {
   return (
@@ -28,7 +33,7 @@ export default function DashboardLayout() {
       />
 
       <Tabs.Screen
-        name="Pets"
+        name="pet"
         options={{
           title: "Pets",
           tabBarIcon: ({ color, size }) => (
@@ -40,19 +45,29 @@ export default function DashboardLayout() {
       <Tabs.Screen
         name="task"
         options={{
-          title: "task",
+          title: "Task",
           tabBarIcon: ({ color, size }) => (
-            <HeartIcon color={color} size={size} />
+            <ListTodoIcon color={color} size={size} />
           ),
         }}
       />
 
+      {/* HealthRecord tab points to the main index screen (list of pets for health) */}
       <Tabs.Screen
-        name="Reminders"
+        name="healthRecord"
         options={{
-          title: "Reminders",
+          title: "Health Record",
           tabBarIcon: ({ color, size }) => (
-            <BellIcon color={color} size={size} />
+            <HeartPulseIcon color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="map"
+        options={{
+          title: "Vet Map",
+          tabBarIcon: ({ color, size }) => (
+            <DogIcon color={color} size={size} />
           ),
         }}
       />
