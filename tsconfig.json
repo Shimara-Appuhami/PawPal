@@ -13,4 +13,5 @@
     "**/*.tsx",
     "nativewind-env.d.ts"
   ]
+  
 }
