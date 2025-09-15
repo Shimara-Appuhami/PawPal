@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
+
 import {
   addDoc,
   collection,
@@ -200,25 +201,48 @@ export default function HealthFormScreen() {
     return match ? decodeURIComponent(match[1]) : null;
   };
 
-  const handleDeleteRecord = async (recordId: string, imageUrl: string) => {
+  const handleDeleteRecord = (recordId: string, imageUrl?: string) => {
     Alert.alert("Delete", "Delete this health record?", [
-      { text: "Cancel" },
+      { text: "Cancel", style: "cancel" },
       {
         text: "Delete",
         style: "destructive",
         onPress: async () => {
           try {
-            try {
-              const path = storagePathFromUrl(imageUrl);
-              if (path) {
-                const imageRef = ref(storage, path);
-                await deleteObject(imageRef);
-              }
-            } catch (e) {
-              console.warn("Storage delete failed (continuing):", e);
+            const user = auth.currentUser;
+            if (!user) {
+              Alert.alert("Error", "No user logged in.");
+              return;
             }
-            await deleteDoc(doc(recordsRef, recordId));
+
+            // ✅ Firestore path
+            const recordDocRef = doc(
+              db,
+              "users",
+              user.uid,
+              "pets",
+              petId, // make sure petId is available in scope
+              "healthRecords",
+              recordId
+            );
+
+            // ✅ Delete Firestore doc
+            await deleteDoc(recordDocRef);
+
+            // ✅ Delete image if exists
+            if (imageUrl) {
+              try {
+                const imageRef = ref(storage, imageUrl);
+                await deleteObject(imageRef);
+                console.log("Deleted image:", imageUrl);
+              } catch (e) {
+                console.warn("Storage delete failed (continuing):", e);
+              }
+            }
+
+            // ✅ Update state
             setRecords((prev) => prev.filter((r) => r.id !== recordId));
+
             Alert.alert("Deleted", "Health record removed.");
           } catch (err) {
             console.error("Delete failed", err);
@@ -555,11 +579,16 @@ export default function HealthFormScreen() {
               borderless: true,
             }}
             style={{
-              backgroundColor: "#111827",
-              paddingVertical: 10,
-              paddingHorizontal: 14,
-              borderRadius: 10,
-              marginTop: 12,
+              backgroundColor: "#0ea5e9",
+              paddingVertical: 12,
+              paddingHorizontal: 20,
+              borderRadius: 14,
+              marginTop: 16,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.15,
+              shadowRadius: 4,
+              elevation: 3,
             }}
           >
             <Text style={{ color: "#fff", fontWeight: "700" }}>Close</Text>

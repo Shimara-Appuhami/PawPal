@@ -6,7 +6,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import React, { useEffect, useState } from "react";
+import { ChevronLeft } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -27,6 +28,20 @@ const PetFormScreen = () => {
   const [breed, setBreed] = useState<string>("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  // track original values for dirty-check on edit
+  const originalRef = useRef<{
+    name: string;
+    type: string;
+    age: string;
+    breed: string;
+    imageUrl?: string;
+  }>({
+    name: "",
+    type: "",
+    age: "",
+    breed: "",
+    imageUrl: undefined,
+  });
   const router = useRouter();
   const { hideLoader, showLoader } = useLoader();
   const { user } = useAuth();
@@ -43,6 +58,14 @@ const PetFormScreen = () => {
             setAge(pet.age);
             setBreed((pet as any).breed || "");
             setImageUrl((pet as any).imageUrl);
+            // save originals for dirty-check
+            originalRef.current = {
+              name: pet.name || "",
+              type: pet.type || "",
+              age: pet.age || "",
+              breed: (pet as any).breed || "",
+              imageUrl: (pet as any).imageUrl,
+            };
           }
         } catch (err) {
           console.error("Error loading pet:", err);
@@ -129,17 +152,63 @@ const PetFormScreen = () => {
     }
   };
 
+  // hasChanges + back handler
+  const hasChanges = isNew
+    ? !!(name.trim() || type.trim() || age.trim() || breed.trim() || imageUri)
+    : name !== originalRef.current.name ||
+      type !== originalRef.current.type ||
+      age !== originalRef.current.age ||
+      breed !== originalRef.current.breed ||
+      !!imageUri; // selecting a new image counts as change
+
+  const handleBack = () => {
+    if (!hasChanges) {
+      router.back();
+      return;
+    }
+    Alert.alert("Discard changes?", "Your changes will be lost.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Discard", style: "destructive", onPress: () => router.back() },
+    ]);
+  };
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.headerWrap}>
-        <Text style={styles.title}>{isNew ? "Add Pet" : "Edit Pet"}</Text>
-        <Text style={styles.subtitle}>
-          Keep your pet profile up to date with a photo and details.
-        </Text>
+      {/* App bar with back icon */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 8,
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={handleBack}
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            alignItems: "center",
+            justifyContent: "center",
+            marginRight: 8,
+            backgroundColor: "#f3f4f6",
+            borderWidth: 1,
+            borderColor: "#e5e7eb",
+          }}
+        >
+          <ChevronLeft size={18} color="#111827" />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>{isNew ? "Add Pet" : "Edit Pet"}</Text>
+          <Text style={styles.subtitle}>
+            Keep your pet profile up to date with a photo and details.
+          </Text>
+        </View>
       </View>
 
       <TouchableOpacity
@@ -225,7 +294,6 @@ export default PetFormScreen;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
   content: { padding: 16, paddingBottom: 32 },
-  headerWrap: { marginBottom: 8 },
   title: { fontSize: 24, fontWeight: "700", color: "#111827" },
   subtitle: { marginTop: 4, color: "#6b7280" },
   uploadBox: {
