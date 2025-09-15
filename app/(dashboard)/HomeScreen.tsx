@@ -1,6 +1,14 @@
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { Bell, ChevronRight, Plus, Search } from "lucide-react-native";
+import { router } from "expo-router";
+import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronRight,
+  PawPrint,
+  Plus,
+} from "lucide-react-native";
 import React, { useEffect, useState } from "react";
+
 import {
   ActivityIndicator,
   Image,
@@ -44,126 +52,308 @@ export default function HomeScreen() {
   const filteredTasks = tasks.filter((t) =>
     tab === "all" ? true : t.category === tab
   );
+  // derived stats
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter((t) => t.completed).length;
+  const overdueTasks = tasks.filter(
+    (t) => !t.completed && t.dueDate && t.dueDate < new Date()
+  ).length;
 
   useEffect(() => {
-    const fetchData = async () => {
-      const user = auth.currentUser;
-      if (!user) return;
+    const user = auth.currentUser;
+    if (!user) return;
 
-      try {
-        const petsRef = collection(db, `users/${user.uid}/pets`);
-        const petsSnap = await getDocs(petsRef);
-        const petList = petsSnap.docs.map((d) => ({
+    setLoading(true);
+
+    // helpers
+    const toDate = (v: any): Date | undefined => {
+      if (!v) return undefined;
+      if (v.toDate) return v.toDate();
+      if (typeof v === "number") return new Date(v);
+      if (typeof v === "string") return new Date(v);
+      return undefined;
+    };
+
+    // Keep track of per-pet task listeners
+    let taskUnsubs: Record<string, () => void> = {};
+    let tasksByPet: Record<string, HomeTask[]> = {};
+
+    const petsRef = collection(db, `users/${user.uid}/pets`);
+    const unsubPets = onSnapshot(
+      petsRef,
+      { includeMetadataChanges: true }, // immediate local updates
+      (petsSnap) => {
+        const petList: HomePet[] = petsSnap.docs.map((d) => ({
           id: d.id,
           name: (d.data() as any).name,
           imageUrl: (d.data() as any).imageUrl,
         }));
 
         setPets(petList);
+        setLoading(false);
 
-        const all: HomeTask[] = [];
-        for (const p of petList) {
+        // Rebuild all task listeners when pets change
+        Object.values(taskUnsubs).forEach((u) => u && u());
+        taskUnsubs = {};
+        tasksByPet = {};
+
+        petList.forEach((p) => {
           const tRef = collection(db, `users/${user.uid}/pets/${p.id}/tasks`);
           const qy = query(tRef, orderBy("createdAt", "desc"));
-          const tSnap = await getDocs(qy);
-          tSnap.docs.forEach((doc) => {
-            const data: any = doc.data();
-            all.push({
-              id: doc.id,
-              title: data.title,
-              description: data.description,
-              createdAt: data.createdAt?.toDate
-                ? data.createdAt.toDate()
-                : undefined,
-              dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-              completed: data.completed,
-              category: data.category,
-              petId: p.id,
-              petName: p.name,
-              petImage: p.imageUrl,
-            });
-          });
-        }
-        setTasks(all);
-      } catch (e) {
-        console.error("Error fetching tasks:", e);
-      } finally {
+          taskUnsubs[p.id] = onSnapshot(
+            qy,
+            { includeMetadataChanges: true }, // immediate local updates
+            (tSnap) => {
+              const list: HomeTask[] = tSnap.docs.map((doc) => {
+                const data: any = doc.data();
+                const created = toDate(data.createdAt);
+                const due = toDate(data.dueDate);
+                const completed =
+                  data?.completed ??
+                  data?.done ??
+                  data?.isDone ??
+                  (typeof data?.status === "string" &&
+                    ["done", "completed"].includes(
+                      data.status.toLowerCase()
+                    )) ??
+                  false;
+
+                return {
+                  id: doc.id,
+                  title: data.title,
+                  description: data.description,
+                  createdAt: created,
+                  dueDate: due,
+                  completed: Boolean(completed),
+                  category: data.category,
+                  petId: p.id,
+                  petName: p.name,
+                  petImage: p.imageUrl,
+                } as HomeTask;
+              });
+
+              tasksByPet[p.id] = list;
+
+              // Merge all tasks and keep sorted by createdAt desc
+              const merged = Object.values(tasksByPet)
+                .flat()
+                .sort(
+                  (a, b) =>
+                    (b.createdAt?.getTime?.() ?? 0) -
+                    (a.createdAt?.getTime?.() ?? 0)
+                );
+              setTasks(merged);
+            },
+            (err) => {
+              console.log("Error fetching tasks for pet", p.id, err);
+            }
+          );
+        });
+      },
+      (err) => {
+        console.error("Error fetching pets:", err);
         setLoading(false);
       }
-    };
+    );
 
-    fetchData();
+    return () => {
+      unsubPets();
+      Object.values(taskUnsubs).forEach((u) => u && u());
+    };
   }, []);
 
-  // modern task card
+  // Modern task card (light)
+
   const TaskCard = ({ t }: { t: HomeTask }) => {
     const accent = t.completed
-      ? "#10b981"
+      ? "#16a34a"
       : t.category === "important"
         ? "#ef4444"
-        : "#0ea5e9";
+        : "#3b82f6";
+
     return (
-      <Pressable
+      <View
         key={t.id}
-        android_ripple={{ color: "rgba(0,0,0,0.06)" }}
         style={{
           backgroundColor: "#fff",
           padding: 16,
-          borderRadius: 18,
-          marginBottom: 12,
+          borderRadius: 14,
+          marginBottom: 14,
           flexDirection: "row",
           alignItems: "center",
           shadowColor: "#000",
           shadowOpacity: 0.06,
-          shadowOffset: { width: 0, height: 3 },
-          shadowRadius: 5,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 8,
           elevation: 3,
         }}
       >
+        {/* accent bar */}
         <View
           style={{
-            width: 10,
-            height: 10,
-            borderRadius: 5,
+            width: 4,
+            height: "100%",
+            borderRadius: 2,
             backgroundColor: accent,
-            marginRight: 12,
+            position: "absolute",
+            left: 0,
+            top: 0,
           }}
         />
+
+        {/* pet avatar */}
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            overflow: "hidden",
+            marginRight: 14,
+            backgroundColor: "#F3F4F6",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {t.petImage ? (
+            <Image
+              source={{ uri: t.petImage }}
+              style={{ width: "100%", height: "100%" }}
+            />
+          ) : (
+            <Text style={{ color: "#2563EB", fontWeight: "700", fontSize: 16 }}>
+              {t.petName?.charAt(0) ?? "P"}
+            </Text>
+          )}
+        </View>
+
+        {/* content */}
         <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: "700", fontSize: 16, color: "#111827" }}>
+          <Text
+            style={{
+              fontWeight: "700",
+              fontSize: 16,
+              color: t.completed ? "#6B7280" : "#111827",
+              textDecorationLine: t.completed ? "line-through" : "none",
+            }}
+            numberOfLines={1}
+          >
             {t.title}
           </Text>
-          <View
-            style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}
+
+          <Text
+            style={{
+              fontSize: 13,
+              color: t.completed ? "#9CA3AF" : "#6B7280",
+              textDecorationLine: t.completed ? "line-through" : "none",
+            }}
+            numberOfLines={1}
           >
-            <Text style={{ color: "#6b7280", fontSize: 12 }}>{t.petName}</Text>
-            {t.dueDate ? (
-              <Text style={{ color: accent, fontSize: 12, marginLeft: 8 }}>
-                • {t.dueDate.toLocaleDateString()}
-              </Text>
-            ) : null}
-          </View>
+            {t.petName} {t.dueDate ? `• ${t.dueDate.toLocaleDateString()}` : ""}
+          </Text>
         </View>
-        <ChevronRight size={18} color="#9ca3af" />
-      </Pressable>
+
+        {/* Navigate button */}
+        <Pressable
+          onPress={() =>
+            router.push({
+              pathname: "/(dashboard)/task/PetTaskScreen",
+              params: { petId: t.petId, petName: t.petName },
+            })
+          }
+          style={{ padding: 6 }}
+        >
+          <ChevronRight size={20} color="#9CA3AF" />
+        </Pressable>
+      </View>
     );
   };
 
+  // Pet tile (horizontal card) - light
+  const PetTile = ({ p }: { p: HomePet }) => (
+    <Pressable
+      key={p.id}
+      android_ripple={{ color: "rgba(0,0,0,0.06)" }}
+      style={{
+        width: 100,
+        height: 100,
+        borderRadius: 50, // fix: must be a number, not "100%"
+        marginRight: 12,
+        overflow: "hidden",
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#E5E7EB",
+        shadowColor: "#000",
+        shadowOpacity: 0.04,
+        shadowOffset: { width: 0, height: 2 },
+        shadowRadius: 4,
+        elevation: 2,
+      }}
+    >
+      <View style={{ flex: 1 }}>
+        {p.imageUrl ? (
+          <Image
+            source={{ uri: p.imageUrl }}
+            style={{ width: "100%", height: "100%" }}
+          />
+        ) : (
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#F3F4F6",
+            }}
+          >
+            <Text style={{ fontSize: 28, fontWeight: "800", color: "#6366F1" }}>
+              {p.name?.charAt(0) || "P"}
+            </Text>
+          </View>
+        )}
+        {/* bottom bar */}
+        {/* <View
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 0,
+            backgroundColor: "rgba(255,255,255,0.95)",
+            borderTopWidth: 1,
+            borderTopColor: "#E5E7EB",
+            paddingHorizontal: 10,
+            justifyContent: "center",
+          }}
+        >
+          <Text
+            numberOfLines={1}
+            style={{ color: "#111827", fontWeight: "800" }}
+          >
+            {p.name}
+          </Text>
+        </View> */}
+      </View>
+    </Pressable>
+  );
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: "#f5f7fb" }}
+      style={{ flex: 1, backgroundColor: "#F7FAFC" }}
       contentContainerStyle={{ paddingBottom: 96 }}
     >
-      {/* AppBar */}
+      {/* Header */}
       <View
         style={{
-          backgroundColor: "#0ea5e9",
-          paddingTop: 28,
-          paddingBottom: 16,
+          paddingTop: 24,
           paddingHorizontal: 20,
-          borderBottomLeftRadius: 24,
-          borderBottomRightRadius: 24,
-          elevation: 4,
+          paddingBottom: 16,
+          backgroundColor: "#0ea5e9",
+          borderBottomLeftRadius: 20,
+          borderBottomRightRadius: 20,
+          shadowColor: "#000",
+          shadowOpacity: 0.03,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 4,
+          elevation: 2,
         }}
       >
         <View
@@ -173,125 +363,229 @@ export default function HomeScreen() {
             justifyContent: "space-between",
           }}
         >
-          <View>
-            <Text style={{ fontSize: 20, fontWeight: "700", color: "#fff" }}>
-              Welcome back
-            </Text>
-            <Text style={{ color: "#e5e7eb", marginTop: 2 }}>{today}</Text>
+          {/* Left: Logo + Welcome */}
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View
+              style={{
+                width: 100,
+                height: 50,
+                borderRadius: 12,
+                overflow: "hidden",
+                backgroundColor: "transparent",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 12,
+              }}
+            >
+              <Image
+                source={require("../../assets/logo/logo.png")}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode="contain"
+              />
+            </View>
+
+            <View>
+              <Text
+                style={{ fontSize: 20, fontWeight: "800", color: "#FFFFFF" }}
+              >
+                Welcome back
+              </Text>
+              <Text style={{ color: "#FFFFFF", marginTop: 2 }}>{today}</Text>
+            </View>
           </View>
-          <Pressable
-            android_ripple={{
-              color: "rgba(255,255,255,0.2)",
-              borderless: true,
+
+          {/* Right: Badge */}
+          {/* <View
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 6,
+              backgroundColor: "#EFF6FF",
+              borderRadius: 14,
             }}
-            style={{ padding: 6, borderRadius: 999 }}
           >
-            <Bell size={22} color="#fff" />
-          </Pressable>
+            <Text style={{ color: "#0EA5E9", fontWeight: "700" }}>PawPal</Text>
+          </View> */}
         </View>
-        <Pressable
-          android_ripple={{ color: "rgba(0,0,0,0.05)" }}
+      </View>
+
+      {/* Pets carousel */}
+      <View style={{ paddingHorizontal: 20 }}>
+        <View
           style={{
-            marginTop: 16,
-            backgroundColor: "#fff",
-            borderRadius: 12,
-            paddingVertical: 10,
-            paddingHorizontal: 12,
             flexDirection: "row",
             alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 10,
           }}
         >
-          <Search size={18} color="#9ca3af" />
-          <Text style={{ color: "#9ca3af", marginLeft: 8 }}>Search</Text>
-        </Pressable>
-      </View>
+          <Text style={{ fontWeight: "800", fontSize: 18, color: "#111827" }}>
+            Your Pets
+          </Text>
+          <Text style={{ color: "#6B7280", fontSize: 12 }}>
+            {pets.length} total
+          </Text>
+        </View>
 
-      {/* Pets grid */}
-      <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
-        <Text
-          style={{
-            fontWeight: "700",
-            fontSize: 18,
-            color: "#111827",
-            marginBottom: 12,
-          }}
-        >
-          Your Pets
-        </Text>
         {loading ? (
-          <ActivityIndicator size="small" color="#0ea5e9" />
+          <ActivityIndicator size="small" color="#0EA5E9" />
         ) : pets.length === 0 ? (
-          <Text style={{ color: "#9ca3af" }}>No pets yet.</Text>
-        ) : (
           <View
             style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
             }}
           >
-            {pets.map((p) => (
-              <Pressable
-                key={p.id}
-                android_ripple={{ color: "rgba(0,0,0,0.06)" }}
-                style={{ width: "48%", marginBottom: 14 }}
-              >
-                <View
-                  style={{
-                    backgroundColor: "#fff",
-                    borderRadius: 16,
-                    overflow: "hidden",
-                    shadowColor: "#000",
-                    shadowOpacity: 0.06,
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowRadius: 5,
-                    elevation: 3,
-                  }}
-                >
-                  <View style={{ width: "100%", aspectRatio: 1 }}>
-                    {p.imageUrl ? (
-                      <Image
-                        source={{ uri: p.imageUrl }}
-                        style={{ width: "100%", height: "100%" }}
-                      />
-                    ) : (
-                      <View
-                        style={{
-                          flex: 1,
-                          backgroundColor: "#e5e7eb",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontWeight: "700",
-                            fontSize: 22,
-                            color: "#0ea5e9",
-                          }}
-                        >
-                          {p.name?.charAt(0) || "P"}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <View style={{ padding: 10 }}>
-                    <Text
-                      style={{ fontWeight: "600", color: "#111827" }}
-                      numberOfLines={1}
-                    >
-                      {p.name}
-                    </Text>
-                  </View>
-                </View>
-              </Pressable>
-            ))}
+            <Text style={{ color: "#6B7280" }}>You have no pets yet.</Text>
           </View>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {pets.map((p) => (
+              <PetTile key={p.id} p={p} />
+            ))}
+          </ScrollView>
         )}
       </View>
+      {/* quick stats */}
+      <View style={{ marginTop: 14 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {/* Pets */}
+          <Pressable
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              borderRadius: 16,
+              padding: 14,
+              marginRight: 12,
+              minWidth: 160,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowOffset: { width: 0, height: 3 },
+              shadowRadius: 6,
+              elevation: 2,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(14,165,233,0.12)",
+                borderWidth: 1,
+                borderColor: "#E0F2FE",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 10,
+              }}
+            >
+              <PawPrint size={20} color="#0EA5E9" />
+            </View>
+            <View>
+              <Text style={{ color: "#6B7280", fontSize: 12 }}>Pets</Text>
+              <Text
+                style={{ color: "#111827", fontWeight: "800", fontSize: 20 }}
+              >
+                {pets.length}
+              </Text>
+            </View>
+          </Pressable>
 
-      {/* Tasks with tabs */}
-      <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
+          {/* Completed */}
+          <Pressable
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              borderRadius: 16,
+              padding: 14,
+              marginRight: 12,
+              minWidth: 160,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowOffset: { width: 0, height: 3 },
+              shadowRadius: 6,
+              elevation: 2,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(34,197,94,0.12)",
+                borderWidth: 1,
+                borderColor: "rgba(187,247,208,1)",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 10,
+              }}
+            >
+              <CheckCircle2 size={20} color="#16A34A" />
+            </View>
+            <View>
+              <Text style={{ color: "#6B7280", fontSize: 12 }}>Completed</Text>
+              <Text
+                style={{ color: "#111827", fontWeight: "800", fontSize: 20 }}
+              >
+                {completedTasks}/{totalTasks}
+              </Text>
+            </View>
+          </Pressable>
+
+          {/* Overdue */}
+          <Pressable
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+              borderRadius: 16,
+              padding: 14,
+              marginRight: 12,
+              minWidth: 160,
+              shadowColor: "#000",
+              shadowOpacity: 0.06,
+              shadowOffset: { width: 0, height: 3 },
+              shadowRadius: 6,
+              elevation: 2,
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <View
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "rgba(239,68,68,0.12)",
+                borderWidth: 1,
+                borderColor: "rgba(254,202,202,1)",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 10,
+              }}
+            >
+              <AlertTriangle size={20} color="#EF4444" />
+            </View>
+            <View>
+              <Text style={{ color: "#6B7280", fontSize: 12 }}>Overdue</Text>
+              <Text
+                style={{ color: "#111827", fontWeight: "800", fontSize: 20 }}
+              >
+                {overdueTasks}
+              </Text>
+            </View>
+          </Pressable>
+        </ScrollView>
+      </View>
+      {/* Tasks with segmented tabs */}
+      <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
         <View
           style={{
             flexDirection: "row",
@@ -300,15 +594,16 @@ export default function HomeScreen() {
             marginBottom: 12,
           }}
         >
-          <Text style={{ fontWeight: "700", fontSize: 18, color: "#111827" }}>
+          <Text style={{ fontWeight: "800", fontSize: 18, color: "#111827" }}>
             Tasks
           </Text>
-          <Text style={{ color: "#6b7280" }}>{filteredTasks.length} items</Text>
+          <Text style={{ color: "#6B7280" }}>{filteredTasks.length} items</Text>
         </View>
+
         <View
           style={{
             flexDirection: "row",
-            backgroundColor: "#e5e7eb",
+            backgroundColor: "#E5E7EB",
             borderRadius: 999,
             padding: 4,
             marginBottom: 12,
@@ -324,13 +619,15 @@ export default function HomeScreen() {
                 paddingVertical: 8,
                 alignItems: "center",
                 borderRadius: 999,
-                backgroundColor: tab === k ? "#fff" : "transparent",
+                backgroundColor: tab === k ? "#FFFFFF" : "transparent",
+                borderWidth: tab === k ? 1 : 0,
+                borderColor: tab === k ? "#E5E7EB" : "transparent",
               }}
             >
               <Text
                 style={{
-                  color: tab === k ? "#111827" : "#6b7280",
-                  fontWeight: tab === k ? ("700" as const) : "500",
+                  color: tab === k ? "#111827" : "#6B7280",
+                  fontWeight: tab === k ? ("800" as const) : "600",
                 }}
               >
                 {k[0].toUpperCase() + k.slice(1)}
@@ -338,10 +635,21 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </View>
+
         {loading ? (
-          <ActivityIndicator size="small" color="#0ea5e9" />
+          <ActivityIndicator size="small" color="#0EA5E9" />
         ) : filteredTasks.length === 0 ? (
-          <Text style={{ color: "#9ca3af" }}>No tasks to show.</Text>
+          <View
+            style={{
+              backgroundColor: "#FFFFFF",
+              borderRadius: 16,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: "#E5E7EB",
+            }}
+          >
+            <Text style={{ color: "#6B7280" }}>No tasks to show.</Text>
+          </View>
         ) : (
           filteredTasks.map((t) => <TaskCard key={t.id} t={t} />)
         )}
@@ -357,14 +665,14 @@ export default function HomeScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: "#0ea5e9",
+          backgroundColor: "#0EA5E9",
           alignItems: "center",
           justifyContent: "center",
           elevation: 6,
           shadowColor: "#000",
-          shadowOpacity: 0.2,
+          shadowOpacity: 0.18,
           shadowOffset: { width: 0, height: 3 },
-          shadowRadius: 5,
+          shadowRadius: 6,
         }}
       >
         <Plus size={24} color="#fff" />
