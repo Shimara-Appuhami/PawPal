@@ -2,7 +2,13 @@ import { useLoader } from "@/context/LoaderContext";
 import { auth, db } from "@/firebase";
 import { Pet } from "@/types/pet";
 import { useRouter } from "expo-router";
-import { collection, deleteDoc, doc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  writeBatch,
+} from "firebase/firestore";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
@@ -19,19 +25,26 @@ const PetsScreen = () => {
   const [pets, setPets] = useState<Pet[]>([]);
   const { showLoader, hideLoader } = useLoader();
   const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null); // add
+  const [deletingPetId, setDeletingPetId] = useState<string | null>(null); // fix: add state
   const router = useRouter();
 
-  const user = auth.currentUser;
-  if (!user) {
-    Alert.alert("Auth", "You must be logged in to see pets.");
-    router.push("/login");
-    return null;
-  }
-
-  // Fetch pets
+  // Auth guard + set userId once
   useEffect(() => {
+    const u = auth.currentUser;
+    if (!u) {
+      Alert.alert("Auth", "You must be logged in to see pets.");
+      router.replace("/(auth)/login");
+      return;
+    }
+    setUserId(u.uid);
+  }, []);
+
+  // Fetch pets (after userId resolved)
+  useEffect(() => {
+    if (!userId) return;
     showLoader();
-    const q = collection(db, "users", user.uid, "pets");
+    const q = collection(db, "users", userId, "pets");
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
@@ -49,24 +62,44 @@ const PetsScreen = () => {
     );
 
     return () => unsubscribe();
-  }, [user]);
+  }, [userId]);
 
   // Delete pet
   const handleDelete = (id: string) => {
+    if (!userId || deletingPetId) return; // prevent multiple deletes
     Alert.alert("Delete", "Are you sure you want to delete this pet?", [
       { text: "Cancel" },
       {
         text: "Delete",
+        style: "destructive",
         onPress: async () => {
           try {
-            setLoading(true);
-            await deleteDoc(doc(db, "users", user.uid, "pets", id));
-            setPets((prev) => prev.filter((pet) => pet.id !== id)); // update UI
-          } catch (err) {
-            console.log("Error deleting pet:", err);
+            setDeletingPetId(id);
+
+            // Build a batch: delete all tasks then the pet doc
+            const batch = writeBatch(db);
+            const tasksCol = collection(
+              db,
+              "users",
+              userId,
+              "pets",
+              id,
+              "tasks"
+            );
+            const tasksSnap = await getDocs(tasksCol);
+            tasksSnap.docs.forEach((d) => batch.delete(d.ref));
+            const petRef = doc(db, "users", userId, "pets", id);
+            batch.delete(petRef);
+
+            await batch.commit();
+
+            // Optimistic local update; onSnapshot will also handle it
+            setPets((prev) => prev.filter((pet) => pet.id !== id));
+          } catch (err: any) {
+            console.log("Error deleting pet:", err?.message || err);
             Alert.alert("Error", "Failed to delete pet.");
           } finally {
-            setLoading(false);
+            setDeletingPetId(null);
           }
         },
       },
@@ -128,7 +161,7 @@ const PetsScreen = () => {
         </View>
       </View>
 
-      {user && (
+      {userId && (
         <View
           style={{
             position: "absolute",
@@ -199,11 +232,8 @@ const PetsScreen = () => {
           }}
         >
           {pets.map((pet) => (
-            <Pressable
-              key={pet.id}
-              android_ripple={{ color: "rgba(0,0,0,0.06)" }}
-              style={{ width: "48%", marginBottom: 14 }}
-            >
+            // replaced outer Pressable with View to avoid nested press conflicts
+            <View key={pet.id} style={{ width: "48%", marginBottom: 14 }}>
               <View
                 style={{
                   backgroundColor: "#fff",
@@ -298,6 +328,7 @@ const PetsScreen = () => {
                     <Pressable
                       android_ripple={{ color: "rgba(0,0,0,0.08)" }}
                       onPress={() => handleDelete(pet.id!)}
+                      disabled={deletingPetId === pet.id}
                       style={{
                         paddingVertical: 6,
                         paddingHorizontal: 10,
@@ -305,6 +336,7 @@ const PetsScreen = () => {
                         backgroundColor: "#fee2e2",
                         flexDirection: "row",
                         alignItems: "center",
+                        opacity: deletingPetId === pet.id ? 0.5 : 1,
                       }}
                     >
                       <Trash2 size={16} color="#ef4444" />
@@ -316,13 +348,13 @@ const PetsScreen = () => {
                           fontSize: 12,
                         }}
                       >
-                        Delete
+                        {deletingPetId === pet.id ? "Deleting..." : "Delete"}
                       </Text>
                     </Pressable>
                   </View>
                 </View>
               </View>
-            </Pressable>
+            </View>
           ))}
         </View>
       </ScrollView>

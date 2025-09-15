@@ -90,6 +90,26 @@ export default function PetProfileScreen() {
     }
   };
 
+  // confirm on back if form has changes
+  const hasChanges = !!(
+    name.trim() ||
+    age.trim() ||
+    type.trim() ||
+    breed.trim() ||
+    imageUri
+  );
+
+  const handleBack = () => {
+    if (!hasChanges) {
+      router.back();
+      return;
+    }
+    Alert.alert("Discard changes?", "Your changes will be lost.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Discard", style: "destructive", onPress: () => router.back() },
+    ]);
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -99,7 +119,7 @@ export default function PetProfileScreen() {
       <View style={styles.appBar}>
         <View style={styles.appBarRow}>
           <Pressable
-            onPress={() => router.back()}
+            onPress={handleBack}
             android_ripple={{
               color: "rgba(255,255,255,0.2)",
               borderless: true,
