@@ -6,13 +6,13 @@ import {
   EyeOff,
   Lock,
   Mail,
-  PawPrint,
   UserPlus,
 } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   Text,
   TextInput,
@@ -135,7 +135,10 @@ const Register = () => {
             borderRadius: 14,
           }}
         >
-          <PawPrint size={18} color="#A78BFA" />
+          <Image
+            source={require("../../assets/logo/logo.png")}
+            style={{ width: 22, height: 22, borderRadius: 4 }}
+          />
           <Text
             style={{
               color: "#E5E7EB",
