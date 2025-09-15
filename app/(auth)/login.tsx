@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
@@ -62,7 +63,7 @@ const Login = () => {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.15)" }}>
           <ScrollView
             contentContainerStyle={{
               flexGrow: 1,
@@ -72,6 +73,17 @@ const Login = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={{ alignItems: "center", marginBottom: 16 }}>
+              {/* brand logo */}
+              <Image
+                source={require("../../assets/logo/logo.png")}
+                style={{
+                  width: 56,
+                  height: 56,
+                  marginBottom: 10,
+                  borderRadius: 12,
+                }}
+                resizeMode="contain"
+              />
               <Text style={{ fontSize: 26, fontWeight: "800", color: "#fff" }}>
                 Welcome back
               </Text>
@@ -81,13 +93,13 @@ const Login = () => {
             </View>
 
             <BlurView
-              intensity={0}
+              intensity={60} // was 0
               tint="light"
               style={{ borderRadius: 18, overflow: "hidden", marginBottom: 16 }}
             >
               <View
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.25)",
+                  backgroundColor: "rgba(255,255,255,0.6)", // brighter glass
                   padding: 16,
                 }}
               >
@@ -184,6 +196,18 @@ const Login = () => {
                       )}
                     </Pressable>
                   </View>
+
+                  {/* Forgot password */}
+                  <Pressable
+                    onPress={() =>
+                      Alert.alert("Forgot password", "Coming soon")
+                    }
+                    style={{ alignSelf: "flex-end", marginTop: 8 }}
+                  >
+                    <Text style={{ color: "#2563EB", fontWeight: "700" }}>
+                      Forgot password?
+                    </Text>
+                  </Pressable>
                 </View>
 
                 {/* Login Button */}
@@ -196,13 +220,18 @@ const Login = () => {
                   }}
                   style={{
                     marginTop: 16,
-                    backgroundColor: "#10b981",
+                    backgroundColor: "#6366F1", // modern primary
                     height: 52,
-                    borderRadius: 12,
+                    borderRadius: 14,
                     alignItems: "center",
                     justifyContent: "center",
                     flexDirection: "row",
                     opacity: email && password ? 1 : 0.8,
+                    shadowColor: "#000",
+                    shadowOpacity: 0.15,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowRadius: 8,
+                    elevation: 3,
                   }}
                 >
                   {isLodingReg ? (
