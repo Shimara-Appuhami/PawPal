@@ -2,6 +2,7 @@ import { Tabs } from "expo-router";
 import {
   DogIcon,
   HeartPulseIcon,
+  HelpCircleIcon,
   HomeIcon,
   ListTodoIcon,
 } from "lucide-react-native";
@@ -68,6 +69,16 @@ export default function DashboardLayout() {
           title: "Vet Map",
           tabBarIcon: ({ color, size }) => (
             <DogIcon color={color} size={size} />
+          ),
+        }}
+      />
+      {/* help */}
+      <Tabs.Screen
+        name="help"
+        options={{
+          title: "Help",
+          tabBarIcon: ({ color, size }) => (
+            <HelpCircleIcon color={color} size={size} />
           ),
         }}
       />
