@@ -329,7 +329,7 @@ export default function HomeScreen() {
   );
 
   const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 20 : 44;
 
   return (
     <ScrollView
@@ -353,6 +353,7 @@ export default function HomeScreen() {
           shadowRadius: 8,
           elevation: 4,
           overflow: "hidden",
+          marginTop: 10,
         }}
       >
         <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
@@ -484,7 +485,7 @@ export default function HomeScreen() {
               borderWidth: 1,
               borderColor: "#E5E7EB",
               borderRadius: 16,
-              padding: 14,
+              padding: 20,
               marginRight: 12,
               minWidth: 160,
               shadowColor: "#000",
