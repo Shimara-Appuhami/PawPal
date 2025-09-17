@@ -311,7 +311,6 @@ export default function HealthFormScreen() {
               width: 42,
               height: 42,
               borderRadius: 21,
-              backgroundColor: "rgba(255,255,255,0.2)",
               alignItems: "center",
               justifyContent: "center",
               marginRight: 12,
