@@ -384,7 +384,7 @@ export default function HealthFormScreen() {
               backgroundColor: "#fff",
             }}
           >
-            <Camera size={22} color="#6366f1" />
+            <Camera size={22} color="#0ea5e9" />
             <Text style={{ marginTop: 6, color: "#111827", fontWeight: "600" }}>
               Camera
             </Text>
@@ -403,7 +403,7 @@ export default function HealthFormScreen() {
               backgroundColor: "#fff",
             }}
           >
-            <ImageIcon size={22} color="#6366f1" />
+            <ImageIcon size={22} color="#0ea5e9" />
             <Text style={{ marginTop: 6, color: "#111827", fontWeight: "600" }}>
               Gallery
             </Text>
@@ -449,7 +449,7 @@ export default function HealthFormScreen() {
             }}
           >
             {uploading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color="#0ea5e9" />
             ) : (
               <Send size={18} color="#fff" />
             )}
