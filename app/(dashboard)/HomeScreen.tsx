@@ -12,8 +12,10 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   View,
 } from "react-native";
@@ -52,7 +54,6 @@ export default function HomeScreen() {
   const filteredTasks = tasks.filter((t) =>
     tab === "all" ? true : t.category === tab
   );
-  // derived stats
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter((t) => t.completed).length;
   const overdueTasks = tasks.filter(
@@ -65,7 +66,6 @@ export default function HomeScreen() {
 
     setLoading(true);
 
-    // helpers
     const toDate = (v: any): Date | undefined => {
       if (!v) return undefined;
       if (v.toDate) return v.toDate();
@@ -74,14 +74,13 @@ export default function HomeScreen() {
       return undefined;
     };
 
-    // Keep track of per-pet task listeners
     let taskUnsubs: Record<string, () => void> = {};
     let tasksByPet: Record<string, HomeTask[]> = {};
 
     const petsRef = collection(db, `users/${user.uid}/pets`);
     const unsubPets = onSnapshot(
       petsRef,
-      { includeMetadataChanges: true }, // immediate local updates
+      { includeMetadataChanges: true },
       (petsSnap) => {
         const petList: HomePet[] = petsSnap.docs.map((d) => ({
           id: d.id,
@@ -92,7 +91,6 @@ export default function HomeScreen() {
         setPets(petList);
         setLoading(false);
 
-        // Rebuild all task listeners when pets change
         Object.values(taskUnsubs).forEach((u) => u && u());
         taskUnsubs = {};
         tasksByPet = {};
@@ -102,7 +100,7 @@ export default function HomeScreen() {
           const qy = query(tRef, orderBy("createdAt", "desc"));
           taskUnsubs[p.id] = onSnapshot(
             qy,
-            { includeMetadataChanges: true }, // immediate local updates
+            { includeMetadataChanges: true },
             (tSnap) => {
               const list: HomeTask[] = tSnap.docs.map((doc) => {
                 const data: any = doc.data();
@@ -134,7 +132,6 @@ export default function HomeScreen() {
 
               tasksByPet[p.id] = list;
 
-              // Merge all tasks and keep sorted by createdAt desc
               const merged = Object.values(tasksByPet)
                 .flat()
                 .sort(
@@ -161,8 +158,6 @@ export default function HomeScreen() {
       Object.values(taskUnsubs).forEach((u) => u && u());
     };
   }, []);
-
-  // Modern task card (light)
 
   const TaskCard = ({ t }: { t: HomeTask }) => {
     const accent = t.completed
@@ -252,7 +247,6 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Navigate button */}
         <Pressable
           onPress={() =>
             router.push({
@@ -268,7 +262,6 @@ export default function HomeScreen() {
     );
   };
 
-  // Pet tile (horizontal card) - light
   const PetTile = ({ p }: { p: HomePet }) => (
     <Pressable
       key={p.id}
@@ -276,7 +269,7 @@ export default function HomeScreen() {
       style={{
         width: 100,
         height: 100,
-        borderRadius: 50, // fix: must be a number, not "100%"
+        borderRadius: 50,
         marginRight: 12,
         overflow: "hidden",
         backgroundColor: "#FFFFFF",
@@ -335,27 +328,56 @@ export default function HomeScreen() {
     </Pressable>
   );
 
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: "#F7FAFC" }}
-      contentContainerStyle={{ paddingBottom: 96 }}
+      contentContainerStyle={{
+        paddingBottom: 96,
+      }}
     >
-      {/* Header */}
+      {/* header */}
       <View
         style={{
-          paddingTop: 24,
+          backgroundColor: "#0ea5e9",
+          paddingTop: topPad,
           paddingHorizontal: 20,
           paddingBottom: 16,
-          backgroundColor: "#0ea5e9",
-          borderBottomLeftRadius: 20,
-          borderBottomRightRadius: 20,
+          borderBottomLeftRadius: 24,
+          borderBottomRightRadius: 24,
           shadowColor: "#000",
-          shadowOpacity: 0.03,
+          shadowOpacity: 0.1,
           shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 4,
-          elevation: 2,
+          shadowRadius: 8,
+          elevation: 4,
+          overflow: "hidden",
         }}
       >
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
         <View
           style={{
             flexDirection: "row",
@@ -363,7 +385,6 @@ export default function HomeScreen() {
             justifyContent: "space-between",
           }}
         >
-          {/* Left: Logo + Welcome */}
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <View
               style={{
@@ -394,7 +415,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Right: Badge */}
           {/* <View
             style={{
               paddingHorizontal: 14,
@@ -408,7 +428,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Pets carousel */}
       <View style={{ paddingHorizontal: 20 }}>
         <View
           style={{
@@ -495,7 +514,6 @@ export default function HomeScreen() {
             </View>
           </Pressable>
 
-          {/* Completed */}
           <Pressable
             style={{
               backgroundColor: "#FFFFFF",
@@ -539,7 +557,7 @@ export default function HomeScreen() {
             </View>
           </Pressable>
 
-          {/* Overdue */}
+          {/* overdue */}
           <Pressable
             style={{
               backgroundColor: "#FFFFFF",
@@ -584,7 +602,6 @@ export default function HomeScreen() {
           </Pressable>
         </ScrollView>
       </View>
-      {/* Tasks with segmented tabs */}
       <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
         <View
           style={{
@@ -655,7 +672,6 @@ export default function HomeScreen() {
         )}
       </View>
 
-      {/* FAB */}
       <Pressable
         android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: true }}
         style={{

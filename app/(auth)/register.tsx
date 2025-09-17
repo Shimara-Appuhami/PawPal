@@ -44,7 +44,6 @@ const Register = () => {
   const handleRegister = async () => {
     if (isLodingReg) return;
 
-    // Basic client-side validation before API call
     if (!isEmailValid) {
       Alert.alert("Invalid email", "Please enter a valid email address.");
       return;
@@ -76,7 +75,6 @@ const Register = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0B1220" }}>
-      {/* Decorative background accents */}
       <View
         style={{
           position: "absolute",
@@ -153,7 +151,6 @@ const Register = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Title */}
       <View
         style={{
           paddingHorizontal: 20,
@@ -175,7 +172,6 @@ const Register = () => {
         </Text>
       </View>
 
-      {/* Card */}
       <View
         style={{
           marginTop: 12,
@@ -187,7 +183,6 @@ const Register = () => {
           borderColor: "rgba(148,163,184,0.12)",
         }}
       >
-        {/* Email */}
         <View style={{ marginBottom: 14 }}>
           <Text
             style={{
@@ -238,7 +233,6 @@ const Register = () => {
           )}
         </View>
 
-        {/* Password */}
         <View style={{ marginBottom: 14 }}>
           <Text
             style={{
@@ -295,7 +289,6 @@ const Register = () => {
           )}
         </View>
 
-        {/* Confirm Password */}
         <View>
           <Text
             style={{
@@ -355,7 +348,6 @@ const Register = () => {
           )}
         </View>
 
-        {/* Action */}
         <Pressable
           onPress={handleRegister}
           disabled={!canSubmit}
@@ -401,7 +393,6 @@ const Register = () => {
         </Text>
       </View>
 
-      {/* Footer */}
       <Pressable onPress={() => router.back()} style={{ marginTop: 18 }}>
         <Text
           style={{

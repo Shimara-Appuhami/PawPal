@@ -6,8 +6,10 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   View,
 } from "react-native";
@@ -40,23 +42,54 @@ export default function HealthIndexScreen() {
     fetchPets();
   }, []);
 
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: "#f5f7fb" }}
       contentContainerStyle={{ paddingBottom: 32 }}
     >
-      {/* AppBar */}
+      {/* appBar */}
       <View
         style={{
           backgroundColor: "#0ea5e9",
-          paddingTop: 28,
+          paddingTop: topPad,
           paddingBottom: 16,
           paddingHorizontal: 20,
           borderBottomLeftRadius: 24,
           borderBottomRightRadius: 24,
           elevation: 4,
+          shadowColor: "#000",
+          shadowOpacity: 0.1,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 8,
+          overflow: "hidden",
         }}
       >
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
         <Text
           style={{
             fontSize: 22,

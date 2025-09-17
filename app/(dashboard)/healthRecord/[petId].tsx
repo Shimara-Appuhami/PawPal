@@ -35,6 +35,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   TextInput,
   View,
@@ -215,21 +216,18 @@ export default function HealthFormScreen() {
               return;
             }
 
-            // ✅ Firestore path
             const recordDocRef = doc(
               db,
               "users",
               user.uid,
               "pets",
-              petId, // make sure petId is available in scope
+              petId,
               "healthRecords",
               recordId
             );
 
-            // ✅ Delete Firestore doc
             await deleteDoc(recordDocRef);
 
-            // ✅ Delete image if exists
             if (imageUrl) {
               try {
                 const imageRef = ref(storage, imageUrl);
@@ -240,7 +238,6 @@ export default function HealthFormScreen() {
               }
             }
 
-            // ✅ Update state
             setRecords((prev) => prev.filter((r) => r.id !== recordId));
 
             Alert.alert("Deleted", "Health record removed.");
@@ -253,52 +250,92 @@ export default function HealthFormScreen() {
     ]);
   };
 
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: "#f6f7fb" }}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
-      {/* AppBar */}
+      {/* appBar */}
       <View
         style={{
           backgroundColor: "#0ea5e9",
-          paddingTop: 28,
+          paddingTop: topPad,
           paddingBottom: 16,
           paddingHorizontal: 20,
           borderBottomLeftRadius: 24,
           borderBottomRightRadius: 24,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
           elevation: 4,
+          overflow: "hidden",
         }}
       >
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
           <Pressable
             onPress={() => router.back()}
-            android_ripple={{ color: "rgba(0,0,0,0.06)", borderless: true }}
+            android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true }}
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 42,
+              height: 42,
+              borderRadius: 21,
+              backgroundColor: "rgba(255,255,255,0.2)",
               alignItems: "center",
               justifyContent: "center",
-              marginRight: 8,
+              marginRight: 12,
             }}
           >
-            <ChevronLeft size={20} color="#111827" />
+            <ChevronLeft size={24} color="#fff" />
           </Pressable>
-          <View>
+
+          <View style={{ flex: 1 }}>
             <Text
               style={{
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: "700",
                 color: "#fff",
               }}
+              numberOfLines={1}
             >
               {petName} - Health Records
             </Text>
             <Text
               style={{
-                color: "#e5e7eb",
-                marginTop: 2,
+                color: "rgba(255,255,255,0.85)",
+                marginTop: 4,
+                fontSize: 14,
               }}
             >
               Upload health-related images and notes
@@ -307,7 +344,6 @@ export default function HealthFormScreen() {
         </View>
       </View>
 
-      {/* Add Record Card */}
       <View
         style={{
           marginTop: 12,
@@ -334,7 +370,6 @@ export default function HealthFormScreen() {
           />
         ) : null}
 
-        {/* Modern actions */}
         <View style={{ flexDirection: "row", gap: 12, marginBottom: 10 }}>
           <Pressable
             onPress={() => pickImage(true)}
@@ -555,7 +590,6 @@ export default function HealthFormScreen() {
         )}
       </View>
 
-      {/* Preview Modal */}
       <Modal visible={previewVisible} transparent animationType="fade">
         <View
           style={{

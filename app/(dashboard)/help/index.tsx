@@ -14,7 +14,9 @@ import {
 import React from "react";
 import {
   Linking,
+  Platform,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
@@ -81,6 +83,9 @@ export default function HelpScreen() {
     },
   ];
 
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   return (
     <ScrollView
       contentContainerStyle={{
@@ -89,20 +94,47 @@ export default function HelpScreen() {
         backgroundColor: "#F8FAFC",
       }}
     >
-      {/* Blue Header */}
       <View
         style={{
           backgroundColor: "#0ea5e9",
-          paddingTop: 28,
+          paddingTop: topPad,
           paddingBottom: 16,
           paddingHorizontal: 20,
           borderBottomLeftRadius: 24,
           borderBottomRightRadius: 24,
           elevation: 4,
-          marginHorizontal: -20, // full-bleed
+          marginHorizontal: -20,
           marginBottom: 16,
+          shadowColor: "#000",
+          shadowOpacity: 0.1,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 8,
+          overflow: "hidden",
         }}
       >
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
         <View
           style={{
             flexDirection: "row",
@@ -131,7 +163,7 @@ export default function HelpScreen() {
         </View>
       </View>
 
-      {/* Hero header */}
+      {/* hero header */}
       <View
         style={{ marginBottom: 16, flexDirection: "row", alignItems: "center" }}
       >
@@ -157,7 +189,6 @@ export default function HelpScreen() {
         keep health data in one place.
       </Text>
 
-      {/* Steps grid */}
       <View
         style={{
           flexDirection: "row",
@@ -204,7 +235,6 @@ export default function HelpScreen() {
         ))}
       </View>
 
-      {/* Need Help */}
       <View
         style={{ marginTop: 18, flexDirection: "row", alignItems: "center" }}
       >
@@ -229,7 +259,6 @@ export default function HelpScreen() {
         Reach us through any of the options below. We’re happy to assist.
       </Text>
 
-      {/* Contact cards */}
       <View style={{ gap: 12 }}>
         {contacts.map((c, idx) => (
           <TouchableOpacity

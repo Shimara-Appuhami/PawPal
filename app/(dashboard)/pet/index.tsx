@@ -15,8 +15,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   View,
 } from "react-native";
@@ -29,7 +31,9 @@ const PetsScreen = () => {
   const [deletingPetId, setDeletingPetId] = useState<string | null>(null); // fix: add state
   const router = useRouter();
 
-  // Auth guard + set userId once
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   useEffect(() => {
     const u = auth.currentUser;
     if (!u) {
@@ -40,7 +44,6 @@ const PetsScreen = () => {
     setUserId(u.uid);
   }, []);
 
-  // Fetch pets (after userId resolved)
   useEffect(() => {
     if (!userId) return;
     showLoader();
@@ -64,9 +67,9 @@ const PetsScreen = () => {
     return () => unsubscribe();
   }, [userId]);
 
-  // Delete pet
+  // delete pet
   const handleDelete = (id: string) => {
-    if (!userId || deletingPetId) return; // prevent multiple deletes
+    if (!userId || deletingPetId) return;
     Alert.alert("Delete", "Are you sure you want to delete this pet?", [
       { text: "Cancel" },
       {
@@ -76,7 +79,6 @@ const PetsScreen = () => {
           try {
             setDeletingPetId(id);
 
-            // Build a batch: delete all tasks then the pet doc
             const batch = writeBatch(db);
             const tasksCol = collection(
               db,
@@ -93,7 +95,6 @@ const PetsScreen = () => {
 
             await batch.commit();
 
-            // Optimistic local update; onSnapshot will also handle it
             setPets((prev) => prev.filter((pet) => pet.id !== id));
           } catch (err: any) {
             console.log("Error deleting pet:", err?.message || err);
@@ -108,18 +109,45 @@ const PetsScreen = () => {
 
   return (
     <View className="flex-1 w-full" style={{ backgroundColor: "#f5f7fb" }}>
-      {/* AppBar */}
       <View
         style={{
           backgroundColor: "#0ea5e9",
-          paddingTop: 28,
+          paddingTop: topPad,
           paddingBottom: 16,
           paddingHorizontal: 20,
           borderBottomLeftRadius: 24,
           borderBottomRightRadius: 24,
           elevation: 4,
+          shadowColor: "#000",
+          shadowOpacity: 0.1,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 8,
+          overflow: "hidden",
         }}
       >
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
         <View
           style={{
             flexDirection: "row",
@@ -148,15 +176,21 @@ const PetsScreen = () => {
           </View>
           <Pressable
             android_ripple={{
-              color: "rgba(255,255,255,0.2)",
+              color: "rgba(255,255,255,0.25)",
               borderless: true,
             }}
             style={{
-              padding: 6,
-              borderRadius: 999,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(255,255,255,0.18)",
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.2)",
             }}
           >
-            <Search size={22} color="#fff" />
+            <Search size={20} color="#fff" />
           </Pressable>
         </View>
       </View>
@@ -232,7 +266,6 @@ const PetsScreen = () => {
           }}
         >
           {pets.map((pet) => (
-            // replaced outer Pressable with View to avoid nested press conflicts
             <View key={pet.id} style={{ width: "48%", marginBottom: 14 }}>
               <View
                 style={{

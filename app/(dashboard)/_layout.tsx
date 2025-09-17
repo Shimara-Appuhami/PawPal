@@ -5,6 +5,8 @@ import {
   HelpCircleIcon,
   HomeIcon,
   ListTodoIcon,
+  MapIcon,
+  SyringeIcon as VaccinationIcon,
 } from "lucide-react-native";
 
 export default function DashboardLayout() {
@@ -53,7 +55,6 @@ export default function DashboardLayout() {
         }}
       />
 
-      {/* HealthRecord tab points to the main index screen (list of pets for health) */}
       <Tabs.Screen
         name="healthRecord"
         options={{
@@ -63,15 +64,29 @@ export default function DashboardLayout() {
           ),
         }}
       />
+      {/* map */}
+
       <Tabs.Screen
         name="map"
         options={{
           title: "Vet Map",
           tabBarIcon: ({ color, size }) => (
-            <DogIcon color={color} size={size} />
+            <MapIcon color={color} size={size} />
           ),
         }}
       />
+      {/* vaccinations */}
+
+      <Tabs.Screen
+        name="vaccinations"
+        options={{
+          title: "Vaccinations",
+          tabBarIcon: ({ color, size }) => (
+            <VaccinationIcon color={color} size={size} />
+          ),
+        }}
+      />
+
       {/* help */}
       <Tabs.Screen
         name="help"

@@ -6,11 +6,14 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { doc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronDown, ChevronLeft } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  FlatList,
   Image,
+  Modal,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,11 +27,13 @@ const PetFormScreen = () => {
   const isNew = !id || id === "new";
   const [name, setName] = useState<string>("");
   const [type, setType] = useState<string>("");
-  const [age, setAge] = useState<string>(""); // optional age field
+  const [age, setAge] = useState<string>("");
   const [breed, setBreed] = useState<string>("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
-  // track original values for dirty-check on edit
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showBreedPicker, setShowBreedPicker] = useState(false);
+  const [breedQuery, setBreedQuery] = useState("");
   const originalRef = useRef<{
     name: string;
     type: string;
@@ -121,17 +126,14 @@ const PetFormScreen = () => {
       } as any;
 
       if (isNew) {
-        // Fall back to existing service for creation (without image upload here)
         await createPet(user.uid, baseData);
       } else {
-        // If a new image was chosen, upload then update imageUrl
         if (imageUri && id) {
           const url = await uploadImage(user.uid, id as string, imageUri);
           baseData.imageUrl = url;
         }
         await updatePet(user.uid, id as string, baseData);
 
-        // Ensure Firestore doc has imageUrl if we uploaded directly
         if (baseData.imageUrl) {
           await updateDoc(doc(db, "users", user.uid, "pets", id as string), {
             imageUrl: baseData.imageUrl,
@@ -159,7 +161,7 @@ const PetFormScreen = () => {
       type !== originalRef.current.type ||
       age !== originalRef.current.age ||
       breed !== originalRef.current.breed ||
-      !!imageUri; // selecting a new image counts as change
+      !!imageUri;
 
   const handleBack = () => {
     if (!hasChanges) {
@@ -172,13 +174,31 @@ const PetFormScreen = () => {
     ]);
   };
 
+  const TYPE_OPTIONS = ["Dog", "Cat"] as const;
+  const BREED_CATALOG: Record<string, string[]> = {
+    Dog: [
+      "Labrador Retriever",
+      "German Shepherd",
+      "Golden Retriever",
+      "Poodle",
+      "American Bully",
+      "Dog (General)",
+    ],
+    Cat: ["Persian", "Siamese", "Maine Coon", "Cat (General)"],
+  };
+  const breedOptions = React.useMemo(() => {
+    const list = type && BREED_CATALOG[type] ? BREED_CATALOG[type] : [];
+    if (!breedQuery.trim()) return list;
+    const q = breedQuery.toLowerCase();
+    return list.filter((b) => b.toLowerCase().includes(q));
+  }, [type, breedQuery]);
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
-      {/* App bar with back icon */}
       <View
         style={{
           flexDirection: "row",
@@ -260,24 +280,47 @@ const PetFormScreen = () => {
         </View>
         <View style={[styles.inputGroup, styles.col]}>
           <Text style={styles.label}>Type</Text>
-          <TextInput
-            style={styles.input}
-            value={type}
-            onChangeText={setType}
-            placeholder="Dog, Cat, etc."
-          />
+          <Pressable
+            onPress={() => setShowTypePicker(true)}
+            style={[styles.input, styles.pickerButton]}
+          >
+            <Text
+              style={[
+                styles.pickerText,
+                !type && { color: "#9ca3af", fontWeight: "400" },
+              ]}
+            >
+              {type || "Select type"}
+            </Text>
+            <ChevronDown size={16} color="#6b7280" />
+          </Pressable>
           <Text style={styles.helper}>Animal category</Text>
         </View>
       </View>
 
       <View style={styles.inputGroup}>
         <Text style={styles.label}>Breed</Text>
-        <TextInput
-          style={styles.input}
-          value={breed}
-          onChangeText={setBreed}
-          placeholder="Labrador, Persian, etc."
-        />
+        <Pressable
+          onPress={() => {
+            if (!type) {
+              Alert.alert("Select Type", "Please choose a pet type first.");
+              return;
+            }
+            setBreedQuery("");
+            setShowBreedPicker(true);
+          }}
+          style={[styles.input, styles.pickerButton]}
+        >
+          <Text
+            style={[
+              styles.pickerText,
+              !breed && { color: "#9ca3af", fontWeight: "400" },
+            ]}
+          >
+            {breed || (type ? "Select breed" : "Choose type first")}
+          </Text>
+          <ChevronDown size={16} color="#6b7280" />
+        </Pressable>
       </View>
 
       <TouchableOpacity style={styles.primaryBtn} onPress={handleSubmit}>
@@ -285,6 +328,113 @@ const PetFormScreen = () => {
           {isNew ? "Add Pet" : "Update Pet"}
         </Text>
       </TouchableOpacity>
+
+      <Modal
+        visible={showTypePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTypePicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Select Type</Text>
+              <Pressable
+                onPress={() => setShowTypePicker(false)}
+                style={styles.closeBtn}
+              >
+                <Text style={styles.closeBtnText}>Close</Text>
+              </Pressable>
+            </View>
+            {TYPE_OPTIONS.map((opt) => {
+              const selected = type === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  style={styles.optionRow}
+                  onPress={() => {
+                    setType(opt);
+                    setBreed("");
+                    setShowTypePicker(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      selected && { fontWeight: "700", color: "#0ea5e9" },
+                    ]}
+                  >
+                    {opt}
+                  </Text>
+                  {selected && <View style={styles.selectedDot} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showBreedPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBreedPicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>
+                {type ? `${type} Breeds` : "Breeds"}
+              </Text>
+              <Pressable
+                onPress={() => setShowBreedPicker(false)}
+                style={styles.closeBtn}
+              >
+                <Text style={styles.closeBtnText}>Close</Text>
+              </Pressable>
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              value={breedQuery}
+              onChangeText={setBreedQuery}
+              placeholder="Search breed..."
+              placeholderTextColor="#9ca3af"
+            />
+            <FlatList
+              data={breedOptions}
+              keyExtractor={(i) => i}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <Text style={styles.emptySearch}>No breeds found.</Text>
+              }
+              renderItem={({ item }) => {
+                const selected = breed === item;
+                return (
+                  <Pressable
+                    style={styles.optionRow}
+                    onPress={() => {
+                      setBreed(item);
+                      setShowBreedPicker(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selected && { fontWeight: "700", color: "#0ea5e9" },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                    {selected && <View style={styles.selectedDot} />}
+                  </Pressable>
+                );
+              }}
+              style={{ maxHeight: 320 }}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -352,4 +502,74 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  pickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  pickerText: { fontSize: 16, color: "#111827", fontWeight: "600" },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  sheetTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  closeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#f1f5f9",
+  },
+  closeBtnText: { color: "#334155", fontWeight: "600", fontSize: 12 },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#f8fafc",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  optionText: { fontSize: 15, color: "#111827", flex: 1 },
+  selectedDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#0ea5e9",
+  },
+  emptySearch: {
+    textAlign: "center",
+    color: "#6b7280",
+    paddingVertical: 24,
+    fontSize: 13,
+  },
 });

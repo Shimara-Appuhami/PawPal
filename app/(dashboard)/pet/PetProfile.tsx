@@ -1,4 +1,3 @@
-// app/(dashboard)/PetProfile.tsx
 import { auth, db, storage } from "@/firebase";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
@@ -10,14 +9,18 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { Camera, ChevronLeft, Save } from "lucide-react-native";
+import { Camera, ChevronDown, ChevronLeft, Save } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Image,
+  Modal,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -31,6 +34,9 @@ export default function PetProfileScreen() {
   const [breed, setBreed] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const [showBreedPicker, setShowBreedPicker] = useState(false);
+  const [breedQuery, setBreedQuery] = useState("");
 
   const pickImage = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -90,7 +96,6 @@ export default function PetProfileScreen() {
     }
   };
 
-  // confirm on back if form has changes
   const hasChanges = !!(
     name.trim() ||
     age.trim() ||
@@ -110,13 +115,75 @@ export default function PetProfileScreen() {
     ]);
   };
 
+  const TYPE_OPTIONS = ["Dog", "Cat"] as const;
+  const BREED_CATALOG: Record<string, string[]> = {
+    Dog: [
+      "Labrador Retriever",
+      "German Shepherd",
+      "Golden Retriever",
+      "Poodle",
+      "American Bully",
+      "Dog (General)",
+    ],
+    Cat: ["Persian", "Siamese", "Maine Coon", "Cat (General)"],
+  };
+  const breedOptions = React.useMemo(() => {
+    const list = type && BREED_CATALOG[type] ? BREED_CATALOG[type] : [];
+    if (!breedQuery.trim()) return list;
+    const q = breedQuery.toLowerCase();
+    return list.filter((b) => b.toLowerCase().includes(q));
+  }, [type, breedQuery]);
+
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingBottom: 120 }]}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.appBar}>
+      <View
+        style={[
+          styles.appBar,
+          {
+            paddingTop: topPad,
+            paddingBottom: 16,
+            paddingHorizontal: 16,
+            borderBottomLeftRadius: 24,
+            borderBottomRightRadius: 24,
+            elevation: 4,
+            shadowColor: "#000",
+            shadowOpacity: 0.1,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 8,
+            overflow: "hidden",
+          },
+        ]}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
         <View style={styles.appBarRow}>
           <Pressable
             onPress={handleBack}
@@ -187,23 +254,46 @@ export default function PetProfileScreen() {
           </View>
           <View style={[styles.inputGroup, styles.col]}>
             <Text style={styles.label}>Type</Text>
-            <TextInput
-              style={styles.input}
-              value={type}
-              onChangeText={setType}
-              placeholder="Dog, Cat, etc."
-            />
+            <Pressable
+              onPress={() => setShowTypePicker(true)}
+              style={[styles.input, styles.pickerButton]}
+            >
+              <Text
+                style={[
+                  styles.pickerText,
+                  !type && { color: "#9ca3af", fontWeight: "400" },
+                ]}
+              >
+                {type || "Select type"}
+              </Text>
+              <ChevronDown size={16} color="#6b7280" />
+            </Pressable>
             <Text style={styles.helper}>Animal category</Text>
           </View>
         </View>
-        <View style={styles.inputGroup}>
+        <View className="inputGroup" style={styles.inputGroup}>
           <Text style={styles.label}>Breed</Text>
-          <TextInput
-            style={styles.input}
-            value={breed}
-            onChangeText={setBreed}
-            placeholder="Labrador, Persian, etc."
-          />
+          <Pressable
+            onPress={() => {
+              if (!type) {
+                Alert.alert("Select Type", "Please choose a pet type first.");
+                return;
+              }
+              setBreedQuery("");
+              setShowBreedPicker(true);
+            }}
+            style={[styles.input, styles.pickerButton]}
+          >
+            <Text
+              style={[
+                styles.pickerText,
+                !breed && { color: "#9ca3af", fontWeight: "400" },
+              ]}
+            >
+              {breed || (type ? "Select breed" : "Choose type first")}
+            </Text>
+            <ChevronDown size={16} color="#6b7280" />
+          </Pressable>
         </View>
       </View>
 
@@ -224,6 +314,112 @@ export default function PetProfileScreen() {
       <Text style={styles.disclaimer}>
         By saving, you agree to keep your pet's info accurate.
       </Text>
+
+      <Modal
+        visible={showTypePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTypePicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Select Type</Text>
+              <Pressable
+                onPress={() => setShowTypePicker(false)}
+                style={styles.closeBtn}
+              >
+                <Text style={styles.closeBtnText}>Close</Text>
+              </Pressable>
+            </View>
+            {TYPE_OPTIONS.map((opt) => {
+              const selected = type === opt;
+              return (
+                <Pressable
+                  key={opt}
+                  style={styles.optionRow}
+                  onPress={() => {
+                    setType(opt);
+                    setBreed("");
+                    setShowTypePicker(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      selected && { fontWeight: "700", color: "#0ea5e9" },
+                    ]}
+                  >
+                    {opt}
+                  </Text>
+                  {selected && <View style={styles.selectedDot} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showBreedPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowBreedPicker(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>
+                {type ? `${type} Breeds` : "Breeds"}
+              </Text>
+              <Pressable
+                onPress={() => setShowBreedPicker(false)}
+                style={styles.closeBtn}
+              >
+                <Text style={styles.closeBtnText}>Close</Text>
+              </Pressable>
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              value={breedQuery}
+              onChangeText={setBreedQuery}
+              placeholder="Search breed..."
+              placeholderTextColor="#9ca3af"
+            />
+            <FlatList
+              data={breedOptions}
+              keyExtractor={(i) => i}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <Text style={styles.emptySearch}>No breeds found.</Text>
+              }
+              renderItem={({ item }) => {
+                const selected = breed === item;
+                return (
+                  <Pressable
+                    style={styles.optionRow}
+                    onPress={() => {
+                      setBreed(item);
+                      setShowBreedPicker(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.optionText,
+                        selected && { fontWeight: "700", color: "#0ea5e9" },
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                    {selected && <View style={styles.selectedDot} />}
+                  </Pressable>
+                );
+              }}
+              style={{ maxHeight: 320 }}
+              showsVerticalScrollIndicator={false}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -344,4 +540,74 @@ const styles = StyleSheet.create({
   fabText: { color: "#fff", fontWeight: "700", marginLeft: 8 },
 
   disclaimer: { textAlign: "center", color: "#9ca3af", marginTop: 12 },
+
+  pickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+  },
+  pickerText: { fontSize: 16, color: "#111827", fontWeight: "600" },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: "#ffffff",
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  sheetTitle: { fontSize: 17, fontWeight: "700", color: "#111827" },
+  closeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#f1f5f9",
+  },
+  closeBtnText: { color: "#334155", fontWeight: "600", fontSize: 12 },
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "#f8fafc",
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  optionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f1f5f9",
+  },
+  optionText: { fontSize: 15, color: "#111827", flex: 1 },
+  selectedDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#0ea5e9",
+  },
+  emptySearch: {
+    textAlign: "center",
+    color: "#6b7280",
+    paddingVertical: 24,
+    fontSize: 13,
+  },
 });

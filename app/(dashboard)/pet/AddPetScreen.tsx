@@ -15,8 +15,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -55,7 +57,6 @@ export default function PetProfileScreen() {
   };
 
   const handleSave = async () => {
-    // Validate inputs
     if (!name.trim() || !age.trim() || !type.trim() || !breed.trim()) {
       Alert.alert("Error", "Please fill all fields");
       return;
@@ -70,7 +71,6 @@ export default function PetProfileScreen() {
     try {
       setLoading(true);
 
-      // Firestore path: users/{uid}/pets
       const docRef = await addDoc(collection(db, "users", user.uid, "pets"), {
         name: name.trim(),
         age: age.trim(),
@@ -87,7 +87,7 @@ export default function PetProfileScreen() {
       }
 
       Alert.alert("Success", "Pet saved successfully!");
-      router.back(); // Go back to previous screen
+      router.back();
     } catch (error: any) {
       console.error("Error saving pet:", error.code, error.message);
       Alert.alert("Error", "Failed to save pet. Try again.");
@@ -96,14 +96,56 @@ export default function PetProfileScreen() {
     }
   };
 
+  const topPad =
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingBottom: 120 }]}
       keyboardShouldPersistTaps="handled"
     >
-      {/* AppBar */}
-      <View style={styles.appBar}>
+      <View
+        style={[
+          styles.appBar,
+          {
+            paddingTop: topPad,
+            paddingBottom: 16,
+            paddingHorizontal: 16,
+            borderBottomLeftRadius: 24,
+            borderBottomRightRadius: 24,
+            elevation: 4,
+            shadowColor: "#000",
+            shadowOpacity: 0.1,
+            shadowOffset: { width: 0, height: 2 },
+            shadowRadius: 8,
+            overflow: "hidden",
+          },
+        ]}
+      >
+        <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
+        <View
+          style={{
+            position: "absolute",
+            right: -30,
+            bottom: -30,
+            width: 140,
+            height: 140,
+            borderRadius: 70,
+            backgroundColor: "rgba(255,255,255,0.08)",
+          }}
+        />
+        <View
+          style={{
+            position: "absolute",
+            left: -20,
+            top: -20,
+            width: 90,
+            height: 90,
+            borderRadius: 45,
+            backgroundColor: "rgba(255,255,255,0.06)",
+          }}
+        />
         <View style={styles.appBarRow}>
           <Pressable
             onPress={() => router.back()}
@@ -125,7 +167,6 @@ export default function PetProfileScreen() {
         </View>
       </View>
 
-      {/* Upload Card */}
       <Pressable
         style={styles.uploadCard}
         android_ripple={{ color: "rgba(0,0,0,0.06)" }}
@@ -151,7 +192,6 @@ export default function PetProfileScreen() {
         )}
       </Pressable>
 
-      {/* Inputs Card */}
       <View style={styles.card}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Pet Name</Text>
@@ -196,7 +236,6 @@ export default function PetProfileScreen() {
         </View>
       </View>
 
-      {/* Floating Save */}
       <Pressable
         onPress={handleSave}
         disabled={loading}
