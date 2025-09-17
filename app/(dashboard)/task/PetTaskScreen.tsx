@@ -161,7 +161,8 @@ export default function PetTaskScreen() {
           borderBottomLeftRadius: 16,
           borderBottomRightRadius: 16,
           elevation: 3,
-          marginBottom: 12,
+          marginTop: 30,
+          marginBottom: 50,
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center" }}>

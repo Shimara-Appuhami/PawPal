@@ -278,14 +278,12 @@ export default function VaccinationsScreen() {
     const q = query.trim();
     if (!q) return userBreeds;
     const qNorm = normalize(q);
-    // Primary exact/substring filter
     let primary = userBreeds.filter(
       (b) =>
         b.name.toLowerCase().includes(q.toLowerCase()) ||
         b.species.toLowerCase().includes(q.toLowerCase())
     );
     if (primary.length > 0) return primary;
-    // Fuzzy fallback
     const fuzzy = userBreeds.filter((b) => {
       const n = normalize(b.name);
       if (n.includes(qNorm)) return true;
@@ -434,6 +432,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
+    marginTop: -11,
     marginBottom: 10,
   },
   headerRow: {

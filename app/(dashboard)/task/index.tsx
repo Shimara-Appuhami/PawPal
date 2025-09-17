@@ -91,7 +91,7 @@ export default function PetSelectScreen() {
             <Text
               style={{
                 color: "#e5e7eb",
-                marginTop: 2,
+                marginTop: 20,
               }}
             >
               Choose a pet to view and add tasks
