@@ -100,6 +100,7 @@ export default function HelpScreen() {
           paddingTop: topPad,
           paddingBottom: 16,
           paddingHorizontal: 20,
+          marginTop: -15,
           borderBottomLeftRadius: 24,
           borderBottomRightRadius: 24,
           elevation: 4,
