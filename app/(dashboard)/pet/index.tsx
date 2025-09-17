@@ -9,7 +9,7 @@ import {
   onSnapshot,
   writeBatch,
 } from "firebase/firestore";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react-native";
+import { Pencil, Plus, Trash2 } from "lucide-react-native";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -174,7 +174,7 @@ const PetsScreen = () => {
               {pets.length} total
             </Text>
           </View>
-          <Pressable
+          {/* <Pressable
             android_ripple={{
               color: "rgba(255,255,255,0.25)",
               borderless: true,
@@ -191,7 +191,7 @@ const PetsScreen = () => {
             }}
           >
             <Search size={20} color="#fff" />
-          </Pressable>
+          </Pressable> */}
         </View>
       </View>
 
