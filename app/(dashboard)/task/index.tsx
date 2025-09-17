@@ -1,4 +1,3 @@
-// app/(dashboard)/task/index.tsx
 import { auth, db } from "@/firebase";
 import { useRouter } from "expo-router";
 import { collection, getDocs } from "firebase/firestore";
@@ -61,7 +60,6 @@ export default function PetSelectScreen() {
       style={{ flex: 1, backgroundColor: "#f5f7fb" }}
       contentContainerStyle={{ paddingBottom: 32 }}
     >
-      {/* AppBar */}
       <View
         style={{
           backgroundColor: "#0ea5e9",
@@ -114,7 +112,6 @@ export default function PetSelectScreen() {
         </View>
       </View>
 
-      {/* Content */}
       <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
         {pets.length === 0 ? (
           <View style={{ alignItems: "center", marginTop: 24 }}>

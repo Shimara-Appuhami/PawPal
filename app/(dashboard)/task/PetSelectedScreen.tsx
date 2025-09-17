@@ -1,4 +1,3 @@
-// app/(dashboard)/task/PetSelectedScreen.tsx
 import { auth, db } from "@/firebase";
 import { useRouter } from "expo-router";
 import { collection, getDocs } from "firebase/firestore";

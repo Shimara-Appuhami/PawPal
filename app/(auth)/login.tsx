@@ -93,17 +93,16 @@ const Login = () => {
             </View>
 
             <BlurView
-              intensity={60} // was 0
+              intensity={60}
               tint="light"
               style={{ borderRadius: 18, overflow: "hidden", marginBottom: 16 }}
             >
               <View
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.6)", // brighter glass
+                  backgroundColor: "rgba(255,255,255,0.6)",
                   padding: 16,
                 }}
               >
-                {/* Email */}
                 <View style={{ marginBottom: 12 }}>
                   <Text
                     style={{
@@ -143,7 +142,6 @@ const Login = () => {
                   </View>
                 </View>
 
-                {/* Password */}
                 <View>
                   <Text
                     style={{
@@ -197,7 +195,6 @@ const Login = () => {
                     </Pressable>
                   </View>
 
-                  {/* Forgot password */}
                   <Pressable
                     onPress={() =>
                       Alert.alert("Forgot password", "Coming soon")
@@ -210,7 +207,6 @@ const Login = () => {
                   </Pressable>
                 </View>
 
-                {/* Login Button */}
                 <Pressable
                   onPress={handleLogin}
                   disabled={isLodingReg}
@@ -220,7 +216,7 @@ const Login = () => {
                   }}
                   style={{
                     marginTop: 16,
-                    backgroundColor: "#6366F1", // modern primary
+                    backgroundColor: "#6366F1",
                     height: 52,
                     borderRadius: 14,
                     alignItems: "center",

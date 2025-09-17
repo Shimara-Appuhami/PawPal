@@ -153,7 +153,6 @@ export default function PetTaskScreen() {
       style={{ flex: 1, backgroundColor: "#f5f7fb" }}
       contentContainerStyle={{ paddingBottom: 120 }}
     >
-      {/* AppBar */}
       <View
         style={{
           backgroundColor: "#0ea5e9",
@@ -200,7 +199,6 @@ export default function PetTaskScreen() {
         </View>
       </View>
 
-      {/* Tabs */}
       <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
         <View
           style={{
@@ -239,7 +237,7 @@ export default function PetTaskScreen() {
         </View>
       </View>
 
-      {/* Tasks */}
+      {/* tasks */}
       <View style={{ paddingHorizontal: 16 }}>
         {loading ? (
           <ActivityIndicator size="small" color="#0ea5e9" />
@@ -324,7 +322,6 @@ export default function PetTaskScreen() {
         )}
       </View>
 
-      {/* FAB */}
       <Pressable
         onPress={() => setShowAdd(true)}
         android_ripple={{ color: "rgba(255,255,255,0.3)", borderless: true }}

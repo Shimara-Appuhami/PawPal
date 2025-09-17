@@ -1,4 +1,3 @@
-// app/services/healthRecordService.ts
 import { auth, db } from "@/firebase";
 import { HealthRecord } from "@/types/HealthRecord";
 import {
@@ -8,7 +7,6 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 
-// Service for managing health records
 
 export const healthRecordService = {
   getRecords: async (petId: string): Promise<HealthRecord[]> => {
