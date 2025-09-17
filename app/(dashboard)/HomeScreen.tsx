@@ -437,7 +437,14 @@ export default function HomeScreen() {
             marginBottom: 10,
           }}
         >
-          <Text style={{ fontWeight: "800", fontSize: 18, color: "#111827" }}>
+          <Text
+            style={{
+              fontWeight: "800",
+              fontSize: 18,
+              color: "#111827",
+              paddingTop: 45,
+            }}
+          >
             Your Pets
           </Text>
           <Text style={{ color: "#6B7280", fontSize: 12 }}>
@@ -468,7 +475,7 @@ export default function HomeScreen() {
         )}
       </View>
       {/* quick stats */}
-      <View style={{ marginTop: 14 }}>
+      <View style={{ marginTop: 20 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {/* Pets */}
           <Pressable
