@@ -201,7 +201,7 @@ const Login = () => {
                     }
                     style={{ alignSelf: "flex-end", marginTop: 8 }}
                   >
-                    <Text style={{ color: "#2563EB", fontWeight: "700" }}>
+                    <Text style={{ color: "#fff", fontWeight: "700" }}>
                       Forgot password?
                     </Text>
                   </Pressable>
@@ -216,7 +216,7 @@ const Login = () => {
                   }}
                   style={{
                     marginTop: 16,
-                    backgroundColor: "#6366F1",
+                    backgroundColor: "#0ea5e9",
                     height: 52,
                     borderRadius: 14,
                     alignItems: "center",
@@ -260,7 +260,7 @@ const Login = () => {
                   textAlign: "center",
                   color: "#fff",
                   fontWeight: "800",
-                  textDecorationLine: "underline",
+                  // textDecorationLine: "underline",
                 }}
               >
                 Don't have an account? Register
