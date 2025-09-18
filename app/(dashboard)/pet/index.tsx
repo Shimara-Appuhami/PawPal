@@ -27,12 +27,12 @@ const PetsScreen = () => {
   const [pets, setPets] = useState<Pet[]>([]);
   const { showLoader, hideLoader } = useLoader();
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null); // add
-  const [deletingPetId, setDeletingPetId] = useState<string | null>(null); // fix: add state
+  const [userId, setUserId] = useState<string | null>(null);
+  const [deletingPetId, setDeletingPetId] = useState<string | null>(null);
   const router = useRouter();
 
   const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 30 : 44;
 
   useEffect(() => {
     const u = auth.currentUser;
