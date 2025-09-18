@@ -4,13 +4,16 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
+  LogOut,
   PawPrint,
   Plus,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 
+import { signOut } from "firebase/auth"; // + add
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Platform,
   Pressable,
@@ -331,6 +334,24 @@ export default function HomeScreen() {
   const topPad =
     Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 20 : 44;
 
+  const handleLogout = () => {
+    Alert.alert("Log out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await signOut(auth);
+            router.replace("/(auth)/login");
+          } catch (e) {
+            console.log("Sign out failed:", e);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: "#F7FAFC" }}
@@ -353,7 +374,7 @@ export default function HomeScreen() {
           shadowRadius: 8,
           elevation: 4,
           overflow: "hidden",
-          marginTop: 10,
+          marginTop: 0,
         }}
       >
         <StatusBar barStyle="light-content" backgroundColor="#0ea5e9" />
@@ -416,16 +437,26 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* <View
+          {/* Right: Logout */}
+          <Pressable
+            onPress={handleLogout}
+            android_ripple={{
+              color: "rgba(255,255,255,0.25)",
+              borderless: true,
+            }}
             style={{
-              paddingHorizontal: 14,
-              paddingVertical: 6,
-              backgroundColor: "#EFF6FF",
-              borderRadius: 14,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "rgba(255,255,255,0.18)",
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.2)",
             }}
           >
-            <Text style={{ color: "#0EA5E9", fontWeight: "700" }}>PawPal</Text>
-          </View> */}
+            <LogOut size={18} color="#fff" />
+          </Pressable>
         </View>
       </View>
 
