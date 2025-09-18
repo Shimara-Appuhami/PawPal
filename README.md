@@ -26,7 +26,7 @@ It includes features such as **pet categories (dog/cat), breed selection, vaccin
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/pawpal.git
+git clone https://github.com/Shimara-Appuhami/PawPal.git
 cd pawpal
 
 🔥 Firebase Configuration
@@ -39,7 +39,7 @@ Click Add Project → enter project name (e.g., PawPal).
 
 Enable Firestore Database and Authentication (Email/Password or Google).
 
-2. Register Your App
+### 2. Register Your App
 
 In Firebase Console → Project settings → Add app → Select Web app (</>).
 
@@ -54,10 +54,10 @@ const firebaseConfig = {
   appId: "1:1234567890:web:abcdef123456",
 };
 
-3. Install Firebase SDK
+### 3. Install Firebase SDK
 npm install firebase
 
-4. Create a Firebase Config File
+### 4. Create a Firebase Config File
 
 Create src/firebase.ts:
 
