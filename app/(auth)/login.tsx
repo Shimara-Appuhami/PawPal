@@ -1,6 +1,7 @@
 import { login } from "@/services/authService";
 import { BlurView } from "expo-blur";
 import { useRouter } from "expo-router";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   Image,
   ImageBackground,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +27,37 @@ const Login = () => {
   const [isLodingReg, setIsLoadingReg] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [fpEmail, setFpEmail] = useState<string>("");
+  const [fpSending, setFpSending] = useState(false);
+
+  const openForgot = () => {
+    setFpEmail(email || "");
+    setForgotOpen(true);
+  };
+
+  const handleSendReset = async () => {
+    if (!fpEmail.trim()) {
+      Alert.alert("Missing email", "Please enter your email.");
+      return;
+    }
+    try {
+      setFpSending(true);
+      const auth = getAuth();
+      await sendPasswordResetEmail(auth, fpEmail.trim());
+      Alert.alert(
+        "Password reset link sent",
+        `Check your email (${fpEmail}) for instructions.`
+      );
+      setForgotOpen(false);
+    } catch (error: any) {
+      console.error(error);
+      Alert.alert("Error", error.message || "Failed to send reset email.");
+    } finally {
+      setFpSending(false);
+    }
+  };
+
   const handleLogin = async () => {
     if (isLodingReg) return;
     setIsLoadingReg(true);
@@ -35,7 +68,7 @@ const Login = () => {
       })
       .catch((err) => {
         console.error(err);
-        Alert.alert("Login failed", "Somthing went wrong");
+        Alert.alert("Login failed", "Something went wrong");
       })
       .finally(() => {
         setIsLoadingReg(false);
@@ -47,12 +80,6 @@ const Login = () => {
       source={require("../../assets/images/hero.png")}
       style={{ flex: 1 }}
       resizeMode="cover"
-      resizeMethod="resize"
-      imageStyle={{
-        width: "100%",
-        height: "100%",
-        transform: [{ scale: 1.05 }],
-      }}
     >
       <StatusBar
         translucent
@@ -73,15 +100,9 @@ const Login = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={{ alignItems: "center", marginBottom: 16 }}>
-              {/* brand logo */}
               <Image
                 source={require("../../assets/logo/logo.png")}
-                style={{
-                  width: 56,
-                  height: 56,
-                  marginBottom: 10,
-                  borderRadius: 12,
-                }}
+                style={{ width: 56, height: 56, marginBottom: 10 }}
                 resizeMode="contain"
               />
               <Text style={{ fontSize: 26, fontWeight: "800", color: "#fff" }}>
@@ -107,31 +128,26 @@ const Login = () => {
                   <Text
                     style={{
                       fontWeight: "700",
-                      color: "#0f172a",
                       marginBottom: 6,
+                      color: "#0f172a",
                     }}
                   >
                     Email
                   </Text>
                   <View style={{ position: "relative" }}>
-                    <View
-                      style={{
-                        position: "absolute",
-                        left: 12,
-                        top: 12,
-                      }}
-                    >
-                      <Mail size={20} color="#6b7280" />
-                    </View>
+                    <Mail
+                      size={20}
+                      color="#6b7280"
+                      style={{ position: "absolute", top: 12, left: 12 }}
+                    />
                     <TextInput
                       placeholder="you@example.com"
-                      placeholderTextColor="#6b7280"
                       value={email}
                       onChangeText={setEmail}
                       autoCapitalize="none"
                       keyboardType="email-address"
+                      placeholderTextColor="#6b7280"
                       style={{
-                        borderWidth: 0,
                         backgroundColor: "rgba(255,255,255,0.85)",
                         borderRadius: 12,
                         paddingVertical: 12,
@@ -142,78 +158,59 @@ const Login = () => {
                   </View>
                 </View>
 
-                <View>
-                  <Text
+                <Text
+                  style={{
+                    fontWeight: "700",
+                    marginBottom: 6,
+                    color: "#0f172a",
+                  }}
+                >
+                  Password
+                </Text>
+                <View style={{ position: "relative" }}>
+                  <Lock
+                    size={20}
+                    color="#6b7280"
+                    style={{ position: "absolute", top: 12, left: 12 }}
+                  />
+                  <TextInput
+                    placeholder="Your password"
+                    value={password}
+                    onChangeText={setPasword}
+                    secureTextEntry={!showPassword}
+                    placeholderTextColor="#6b7280"
                     style={{
-                      fontWeight: "700",
-                      color: "#0f172a",
-                      marginBottom: 6,
+                      backgroundColor: "rgba(255,255,255,0.85)",
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      paddingHorizontal: 44,
+                      color: "#111827",
                     }}
-                  >
-                    Password
-                  </Text>
-                  <View style={{ position: "relative" }}>
-                    <View
-                      style={{
-                        position: "absolute",
-                        left: 12,
-                        top: 12,
-                      }}
-                    >
-                      <Lock size={20} color="#6b7280" />
-                    </View>
-                    <TextInput
-                      placeholder="Your password"
-                      placeholderTextColor="#6b7280"
-                      secureTextEntry={!showPassword}
-                      value={password}
-                      onChangeText={setPasword}
-                      style={{
-                        borderWidth: 0,
-                        backgroundColor: "rgba(255,255,255,0.85)",
-                        borderRadius: 12,
-                        paddingVertical: 12,
-                        paddingHorizontal: 44,
-                        paddingRight: 44,
-                        color: "#111827",
-                      }}
-                    />
-                    <Pressable
-                      onPress={() => setShowPassword((s) => !s)}
-                      style={{
-                        position: "absolute",
-                        right: 12,
-                        top: 10,
-                        padding: 4,
-                      }}
-                    >
-                      {showPassword ? (
-                        <EyeOff size={20} color="#6b7280" />
-                      ) : (
-                        <Eye size={20} color="#6b7280" />
-                      )}
-                    </Pressable>
-                  </View>
-
+                  />
                   <Pressable
-                    onPress={() =>
-                      Alert.alert("Forgot password", "Coming soon")
-                    }
-                    style={{ alignSelf: "flex-end", marginTop: 8 }}
+                    onPress={() => setShowPassword((s) => !s)}
+                    style={{ position: "absolute", right: 12, top: 10 }}
                   >
-                    <Text style={{ color: "#fff", fontWeight: "700" }}>
-                      Forgot password?
-                    </Text>
+                    {showPassword ? (
+                      <EyeOff size={20} color="#6b7280" />
+                    ) : (
+                      <Eye size={20} color="#6b7280" />
+                    )}
                   </Pressable>
                 </View>
 
                 <Pressable
+                  onPress={openForgot}
+                  style={{ alignSelf: "flex-end", marginTop: 8 }}
+                >
+                  <Text style={{ color: "#0ea5e9", fontWeight: "700" }}>
+                    Forgot password?
+                  </Text>
+                </Pressable>
+
+                <Pressable
                   onPress={handleLogin}
                   disabled={isLodingReg}
-                  android_ripple={{
-                    color: "rgba(255,255,255,0.3)",
-                    borderless: true,
-                  }}
                   style={{
                     marginTop: 16,
                     backgroundColor: "#0ea5e9",
@@ -222,12 +219,6 @@ const Login = () => {
                     alignItems: "center",
                     justifyContent: "center",
                     flexDirection: "row",
-                    opacity: email && password ? 1 : 0.8,
-                    shadowColor: "#000",
-                    shadowOpacity: 0.15,
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowRadius: 8,
-                    elevation: 3,
                   }}
                 >
                   {isLodingReg ? (
@@ -240,7 +231,6 @@ const Login = () => {
                           color: "#fff",
                           fontWeight: "700",
                           marginLeft: 8,
-                          fontSize: 16,
                         }}
                       >
                         Login
@@ -251,22 +241,94 @@ const Login = () => {
               </View>
             </BlurView>
 
-            <Pressable
-              onPress={() => router.push("/(auth)/register")}
-              style={{ marginTop: 16 }}
-            >
+            <Pressable onPress={() => router.push("/(auth)/register")}>
               <Text
                 style={{
                   textAlign: "center",
                   color: "#fff",
                   fontWeight: "800",
-                  // textDecorationLine: "underline",
                 }}
               >
                 Don't have an account? Register
               </Text>
             </Pressable>
           </ScrollView>
+
+          <Modal
+            visible={forgotOpen}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setForgotOpen(false)}
+          >
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(0,0,0,0.5)",
+                justifyContent: "center",
+                padding: 20,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: "#fff",
+                  borderRadius: 16,
+                  padding: 16,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 18, fontWeight: "800", marginBottom: 12 }}
+                >
+                  Reset your password
+                </Text>
+
+                <TextInput
+                  placeholder="Enter your email"
+                  value={fpEmail}
+                  onChangeText={setFpEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholderTextColor="#9CA3AF"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#E5E7EB",
+                    borderRadius: 12,
+                    padding: 12,
+                    marginBottom: 14,
+                    color: "#111827",
+                  }}
+                />
+
+                <Pressable
+                  onPress={handleSendReset}
+                  disabled={fpSending}
+                  style={{
+                    backgroundColor: "#0ea5e9",
+                    height: 48,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {fpSending ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={{ color: "#fff", fontWeight: "800" }}>
+                      Send reset link
+                    </Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setForgotOpen(false)}
+                  style={{ marginTop: 12, alignSelf: "center" }}
+                >
+                  <Text style={{ color: "#64748B", fontWeight: "700" }}>
+                    Cancel
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
         </View>
       </KeyboardAvoidingView>
     </ImageBackground>
