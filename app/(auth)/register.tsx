@@ -74,7 +74,8 @@ const Register = () => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#0B1220" }}>
+    <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
+      {/* light decorative blobs */}
       <View
         style={{
           position: "absolute",
@@ -83,7 +84,7 @@ const Register = () => {
           width: 220,
           height: 220,
           borderRadius: 200,
-          backgroundColor: "rgba(99,102,241,0.18)",
+          backgroundColor: "rgba(14,165,233,0.10)",
         }}
       />
       <View
@@ -94,7 +95,7 @@ const Register = () => {
           width: 260,
           height: 260,
           borderRadius: 260,
-          backgroundColor: "rgba(236,72,153,0.15)",
+          backgroundColor: "rgba(236,72,153,0.08)",
         }}
       />
 
@@ -117,10 +118,10 @@ const Register = () => {
             borderRadius: 12,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "rgba(255,255,255,0.06)",
+            backgroundColor: "rgba(14,165,233,0.12)",
           }}
         >
-          <ArrowLeft size={18} color="#E5E7EB" />
+          <ArrowLeft size={18} color="#0EA5E9" />
         </Pressable>
 
         <View
@@ -129,7 +130,7 @@ const Register = () => {
             alignItems: "center",
             paddingVertical: 8,
             paddingHorizontal: 12,
-            backgroundColor: "rgba(255,255,255,0.06)",
+            backgroundColor: "rgba(14,165,233,0.08)",
             borderRadius: 14,
           }}
         >
@@ -137,13 +138,7 @@ const Register = () => {
             source={require("../../assets/logo/logo.png")}
             style={{ width: 22, height: 22, borderRadius: 4 }}
           />
-          <Text
-            style={{
-              color: "#E5E7EB",
-              marginLeft: 8,
-              fontWeight: "700",
-            }}
-          >
+          <Text style={{ color: "#0EA5E9", marginLeft: 8, fontWeight: "700" }}>
             PawPal
           </Text>
         </View>
@@ -151,45 +146,30 @@ const Register = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      <View
-        style={{
-          paddingHorizontal: 20,
-          marginTop: 16,
-          marginBottom: 8,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 28,
-            fontWeight: "800",
-            color: "#F8FAFC",
-          }}
-        >
+      <View style={{ paddingHorizontal: 20, marginTop: 16, marginBottom: 8 }}>
+        <Text style={{ fontSize: 28, fontWeight: "800", color: "#0F172A" }}>
           Create your account
         </Text>
-        <Text style={{ color: "#94A3B8", marginTop: 6 }}>
+        <Text style={{ color: "#64748B", marginTop: 6 }}>
           Join the community of pet lovers.
         </Text>
       </View>
 
+      {/* Form Card */}
       <View
         style={{
           marginTop: 12,
           marginHorizontal: 20,
-          backgroundColor: "#0F172A",
+          backgroundColor: "#FFFFFF",
           borderRadius: 20,
           padding: 16,
           borderWidth: 1,
-          borderColor: "rgba(148,163,184,0.12)",
+          borderColor: "#E5E7EB",
         }}
       >
         <View style={{ marginBottom: 14 }}>
           <Text
-            style={{
-              fontWeight: "700",
-              color: "#CBD5E1",
-              marginBottom: 8,
-            }}
+            style={{ fontWeight: "700", color: "#334155", marginBottom: 8 }}
           >
             Email
           </Text>
@@ -197,49 +177,38 @@ const Register = () => {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "#0B1324",
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
               borderColor:
-                isEmailValid || email.length === 0
-                  ? "rgba(148,163,184,0.2)"
-                  : "#FCA5A5",
+                isEmailValid || email.length === 0 ? "#E5E7EB" : "#FCA5A5",
               borderRadius: 14,
               paddingHorizontal: 12,
               height: 52,
             }}
           >
-            <Mail size={18} color="#94A3B8" />
+            <Mail size={18} color="#6B7280" />
             <TextInput
               placeholder="you@example.com"
-              placeholderTextColor="#64748B"
+              placeholderTextColor="#9CA3AF"
               value={email}
               onChangeText={setEmail}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
-              style={{ flex: 1, color: "#E5E7EB", marginLeft: 10 }}
+              style={{ flex: 1, color: "#0F172A", marginLeft: 10 }}
             />
           </View>
           {!isEmailValid && email.length > 0 && (
-            <Text
-              style={{
-                color: "#FCA5A5",
-                marginTop: 6,
-                fontSize: 12,
-              }}
-            >
+            <Text style={{ color: "#DC2626", marginTop: 6, fontSize: 12 }}>
               Enter a valid email address.
             </Text>
           )}
         </View>
 
+        {/* Password */}
         <View style={{ marginBottom: 14 }}>
           <Text
-            style={{
-              fontWeight: "700",
-              color: "#CBD5E1",
-              marginBottom: 8,
-            }}
+            style={{ fontWeight: "700", color: "#334155", marginBottom: 8 }}
           >
             Password
           </Text>
@@ -247,55 +216,46 @@ const Register = () => {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "#0B1324",
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
               borderColor:
                 isPasswordValid || password.length === 0
-                  ? "rgba(148,163,184,0.2)"
+                  ? "#E5E7EB"
                   : "#FCA5A5",
               borderRadius: 14,
               paddingHorizontal: 12,
               height: 52,
             }}
           >
-            <Lock size={18} color="#94A3B8" />
+            <Lock size={18} color="#6B7280" />
             <TextInput
               placeholder="Create a strong password"
-              placeholderTextColor="#64748B"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry={!showPassword}
               value={password}
               onChangeText={setPasword}
               autoCapitalize="none"
-              style={{ flex: 1, color: "#E5E7EB", marginLeft: 10 }}
+              style={{ flex: 1, color: "#0F172A", marginLeft: 10 }}
             />
             <Pressable onPress={() => setShowPassword((s) => !s)} hitSlop={10}>
               {showPassword ? (
-                <EyeOff size={18} color="#94A3B8" />
+                <EyeOff size={18} color="#6B7280" />
               ) : (
-                <Eye size={18} color="#94A3B8" />
+                <Eye size={18} color="#6B7280" />
               )}
             </Pressable>
           </View>
           {!isPasswordValid && password.length > 0 && (
-            <Text
-              style={{
-                color: "#FCA5A5",
-                marginTop: 6,
-                fontSize: 12,
-              }}
-            >
+            <Text style={{ color: "#DC2626", marginTop: 6, fontSize: 12 }}>
               At least 8 characters required.
             </Text>
           )}
         </View>
 
+        {/* Confirm password */}
         <View>
           <Text
-            style={{
-              fontWeight: "700",
-              color: "#CBD5E1",
-              marginBottom: 8,
-            }}
+            style={{ fontWeight: "700", color: "#334155", marginBottom: 8 }}
           >
             Confirm password
           </Text>
@@ -303,58 +263,53 @@ const Register = () => {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "#0B1324",
+              backgroundColor: "#FFFFFF",
               borderWidth: 1,
               borderColor:
                 doPasswordsMatch || confirmPassword.length === 0
-                  ? "rgba(148,163,184,0.2)"
+                  ? "#E5E7EB"
                   : "#FCA5A5",
               borderRadius: 14,
               paddingHorizontal: 12,
               height: 52,
             }}
           >
-            <Lock size={18} color="#94A3B8" />
+            <Lock size={18} color="#6B7280" />
             <TextInput
               placeholder="Re-enter your password"
-              placeholderTextColor="#64748B"
+              placeholderTextColor="#9CA3AF"
               secureTextEntry={!showConfirmPassword}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               autoCapitalize="none"
-              style={{ flex: 1, color: "#E5E7EB", marginLeft: 10 }}
+              style={{ flex: 1, color: "#0F172A", marginLeft: 10 }}
             />
             <Pressable
               onPress={() => setShowConfirmPassword((s) => !s)}
               hitSlop={10}
             >
               {showConfirmPassword ? (
-                <EyeOff size={18} color="#94A3B8" />
+                <EyeOff size={18} color="#6B7280" />
               ) : (
-                <Eye size={18} color="#94A3B8" />
+                <Eye size={18} color="#6B7280" />
               )}
             </Pressable>
           </View>
           {!doPasswordsMatch && confirmPassword.length > 0 && (
-            <Text
-              style={{
-                color: "#FCA5A5",
-                marginTop: 6,
-                fontSize: 12,
-              }}
-            >
+            <Text style={{ color: "#DC2626", marginTop: 6, fontSize: 12 }}>
               Passwords do not match.
             </Text>
           )}
         </View>
 
+        {/* Submit */}
         <Pressable
           onPress={handleRegister}
           disabled={!canSubmit}
-          android_ripple={{ color: "rgba(255,255,255,0.12)", borderless: true }}
+          android_ripple={{ color: "rgba(14,165,233,0.12)", borderless: true }}
           style={{
             marginTop: 18,
-            backgroundColor: canSubmit ? "#7C3AED" : "rgba(124,58,237,0.35)",
+            backgroundColor: canSubmit ? "#0ea5e9" : "rgba(14,165,233,0.35)",
             height: 56,
             borderRadius: 14,
             alignItems: "center",
@@ -393,13 +348,10 @@ const Register = () => {
         </Text>
       </View>
 
+      {/* Footer link */}
       <Pressable onPress={() => router.back()} style={{ marginTop: 18 }}>
         <Text
-          style={{
-            textAlign: "center",
-            color: "#A78BFA",
-            fontWeight: "800",
-          }}
+          style={{ textAlign: "center", color: "#0EA5E9", fontWeight: "800" }}
         >
           Already have an account? Log in
         </Text>
@@ -407,5 +359,4 @@ const Register = () => {
     </View>
   );
 };
-
 export default Register;
