@@ -83,6 +83,7 @@ export default function PetSelectScreen() {
               style={{
                 fontSize: 20,
                 fontWeight: "700",
+                marginTop: 20,
                 color: "#fff",
               }}
             >
