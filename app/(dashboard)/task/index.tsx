@@ -1,7 +1,6 @@
 import { auth, db } from "@/firebase";
 import { useRouter } from "expo-router";
 import { collection, getDocs } from "firebase/firestore";
-import { Search } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -63,7 +62,7 @@ export default function PetSelectScreen() {
       <View
         style={{
           backgroundColor: "#0ea5e9",
-          paddingTop: 28,
+          paddingTop: 25,
           paddingBottom: 16,
           paddingHorizontal: 20,
           borderBottomLeftRadius: 24,
@@ -108,7 +107,7 @@ export default function PetSelectScreen() {
               borderRadius: 999,
             }}
           >
-            <Search size={20} color="#fff" />
+            {/* <Search size={20} color="#fff" /> */}
           </Pressable>
         </View>
       </View>

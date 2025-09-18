@@ -412,7 +412,8 @@ export default function VaccinationsScreen() {
     </View>
   );
 }
-
+const topPad =
+  Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 5 : 44;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -421,19 +422,19 @@ const styles = StyleSheet.create({
       Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 8 : 12,
   },
   header: {
-    paddingTop: 16,
+    backgroundColor: "#0ea5e9",
+    paddingTop: topPad,
     paddingHorizontal: 20,
-    paddingBottom: 14,
-    backgroundColor: "#0EA5E9",
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     shadowColor: "#000",
-    shadowOpacity: 0.03,
+    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-    marginTop: -11,
-    marginBottom: 10,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: "hidden",
+    marginTop: -25,
   },
   headerRow: {
     flexDirection: "row",
