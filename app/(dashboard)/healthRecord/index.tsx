@@ -43,7 +43,7 @@ export default function HealthIndexScreen() {
   }, []);
 
   const topPad =
-    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 12 : 44;
+    Platform.OS === "android" ? (StatusBar.currentHeight || 0) + 27 : 44;
 
   return (
     <ScrollView
