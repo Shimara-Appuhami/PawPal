@@ -75,7 +75,6 @@ const Register = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
-      {/* light decorative blobs */}
       <View
         style={{
           position: "absolute",
