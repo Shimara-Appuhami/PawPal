@@ -4,12 +4,9 @@ import React from "react";
 const HealthLayout = () => {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen
-        name="HealthRecordScreen"
-        options={{ title: "Health Record" }}
-      />
+      <Stack.Screen name="index" options={{ title: "Health Record" }} />
 
-      <Stack.Screen name="add" options={{ title: "Add Health Record" }} />
+      {/* <Stack.Screen name="add" options={{ title: "Add Health Record" }} /> */}
     </Stack>
   );
 };
