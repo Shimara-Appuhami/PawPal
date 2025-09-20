@@ -9,9 +9,24 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "nativewind-env.d.ts"
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "context/**/*.ts",
+    "context/**/*.tsx",
+    "services/**/*.ts",
+    "services/**/*.tsx",
+    "types/**/*.ts",
+    "types/**/*.tsx",
+    "firebase.ts",
+    "nativewind-env.d.ts",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ],
+  "exclude": [
+    "pawpal",
+    "pawpal/**",
+    "pawpal/**/*"
   ]
-  
 }
