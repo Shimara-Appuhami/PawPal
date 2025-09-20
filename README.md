@@ -110,6 +110,4 @@ Deploy using Expo EAS for Android/iOS builds
 npm install
 npm start
 
-build file -
-https://expo.dev/accounts/shimara-appuhami/projects/pawpal/builds/f59beaf7-6b2a-4a2b-8552-3d7496221a06
-
+build file - https://expo.dev/accounts/shimara-appuhami/projects/pawpal/builds/177302a2-a924-4040-8bb9-04013334ada3
